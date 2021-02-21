@@ -1,0 +1,44 @@
+data_root: ./data
+marker_mapping:  # can be used as CEA: all or CEA: CEA&SCCA. You can comment a marker to disable it
+  CEA: ALL
+  CYFRA21: ALL
+  SCCA: ALL
+  NSE: ALL
+  GRP: ALL
+  CA125: ALL
+  EGFR: ALL
+  IDH1: ALL
+features:
+  - Ct1
+  - Ct2
+  - GAPDH1
+  - GAPDH2
+  - GAPDHmean
+  - ΔCt 1
+  - ΔCt 2
+  - ΔΔCt 1
+  - ΔΔCt 2
+  - Fold 1
+  - Fold 2
+  - Ave Fold
+  - sd
+class_mapping:  # You can comment a class to disable it
+  0: 0
+  1: 1
+  2: 2
+  3: 3
+  4: 4
+  5: 5
+num_split_fold: 5  # num-fold strategy to split train and eval dataset
+split_random_seed: 0.1
+# if None, only use the samples that has all markers. or set the default value.
+default_missing_value: null
+
+model: rdf
+model_kwargs:
+  n_estimators: [10, 100]
+  criterion: [gini, entropy]
+  max_depth: [null, 10]
+  min_samples_split: [2, 0.1]
+  min_samples_leaf: [1, 0.1]
+  class_weight: [balanced, balanced_subsample]

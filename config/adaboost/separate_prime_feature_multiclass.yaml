@@ -1,0 +1,41 @@
+data_root: ./data
+marker_mapping:  # can be used as CEA: all or CEA: CEA&SCCA. You can comment a marker to disable it
+  CEA: CEA
+  CYFRA21: CYFRA21
+  SCCA: SCCA
+  NSE: NSE
+  GRP: GRP
+  CA125: CA125
+  EGFR: EGFR
+  IDH1: IDH1
+features:
+#  - Ct1
+#  - Ct2
+#  - GAPDH1
+#  - GAPDH2
+#  - GAPDHmean
+#  - ΔCt 1
+#  - ΔCt 2
+#  - ΔΔCt 1
+#  - ΔΔCt 2
+#  - Fold 1
+#  - Fold 2
+  - Ave Fold
+  - sd
+class_mapping:  # You can comment a class to disable it
+  0: 0
+  1: 1
+  2: 2
+  3: 3
+  4: 4
+  5: 5
+num_split_fold: 5  # num-fold strategy to split train and eval dataset
+split_random_seed: 0.1
+# if None, only use the samples that has all markers. or set the default value.
+default_missing_value: null
+
+model: adaboost
+model_kwargs:
+  n_estimators: [10, 50, 100]
+  learning_rate: [0.1, 1, 10]
+  algorithm: [SAMME, SAMME.R]
