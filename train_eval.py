@@ -9,6 +9,7 @@ from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.manifold import TSNE
 from sklearn.model_selection import GridSearchCV
+from scipy.interpolate import Rbf
 
 import matplotlib.pyplot as plt
 
@@ -30,10 +31,25 @@ args = parser.parse_args()
 def evaluate(y_true, y_pred, labels=(1,), average=None):
     precision = 100*metrics.precision_score(y_true, y_pred, labels=labels, average=average)
     recall = 100*metrics.recall_score(y_true, y_pred, labels=labels, average=average)
+
     jaccard = 100*metrics.jaccard_score(y_true, y_pred, labels=labels, average=average)
     conf_mat = metrics.confusion_matrix(y_true, y_pred, labels=labels)
+
+    tps = np.diagonal(conf_mat)
+    ps = np.sum(conf_mat, 1)
+    sensitivity = 100*tps / ps
+    specificity = np.zeros_like(sensitivity)
+    for i in range(len(specificity)):
+        all_negative_tps = 0
+        all_negative_ps = 0
+        for j in range(len(specificity)):
+            if i != j:
+                all_negative_tps += tps[j]
+                all_negative_ps += ps[j]
+        specificity[i] = all_negative_tps / all_negative_ps
+    specificity *= 100
     f1 = 100*metrics.f1_score(y_true, y_pred, average='macro')
-    return precision, recall, jaccard, conf_mat, f1
+    return precision, recall, sensitivity, specificity, jaccard, conf_mat, f1
 
 
 def train_eval(config, exp_path):
@@ -61,13 +77,11 @@ def train_eval(config, exp_path):
     for i, marker in enumerate(dataset.markers):
         print('parameter search for marker %s...' % marker)
         all_x, all_y, cv_index = dataset.get_all_data(marker)
-        # if len(dataset.classes) == 2:
-        #     scoring = 'recall'
         best_model = GridSearchCV(model_class(),
                                   param_grid=config['model_kwargs'],
                                   n_jobs=4,
                                   cv=cv_index,
-                                  scoring='recall_weighted')
+                                  scoring='recall_macro')
         best_model.fit(all_x, all_y)
         best_params[marker] = best_model.best_params_
         print('search done')
@@ -95,9 +109,9 @@ def train_eval(config, exp_path):
             maybe_create_path(os.path.dirname(model_filename))
             with open(model_filename, 'wb') as f:
                 pickle.dump(model, f)
-        train_precision, train_recall, train_jaccard, train_conf_mat, train_f1 = \
+        train_precision, train_recall, train_sensitivity, train_specificity, train_jaccard, train_conf_mat, train_f1 = \
             evaluate(train_ys, pred_train_ys, dataset.classes, None)
-        test_precision, test_recall, test_jaccard, test_conf_mat, test_f1 = \
+        test_precision, test_recall, test_sensitivity, test_specificity, test_jaccard, test_conf_mat, test_f1 = \
             evaluate(test_ys, pred_test_ys, dataset.classes, None)
         all_marker_train_f1s.append(train_f1)
         all_marker_test_f1s.append(test_f1)
@@ -105,8 +119,8 @@ def train_eval(config, exp_path):
         double_print('marker: %s' % marker, metrics_file)
         double_print('metrics on training set:', metrics_file)
         for j, class_j in enumerate(dataset.classes):
-            double_print('class: %s: precision: %1.1f. recall: %1.1f. acc: %1.1f.'
-                         % (class_j, train_precision[j], train_recall[j], train_jaccard[j]),
+            double_print('class: %s: precision: %1.1f. recall: %1.1f. sensitivity: %1.1f. specificity: %1.1f. acc: %1.1f.'
+                         % (class_j, train_precision[j], train_recall[j], train_sensitivity[j], train_specificity[j], train_jaccard[j]),
                          metrics_file)
         double_print('avg f1: %1.1f' % train_f1)
 
@@ -147,15 +161,17 @@ def train_eval(config, exp_path):
         table_vals = [[str(class_i) for class_i in dataset.classes],
                       ['%1.1f' % train_p for train_p in train_precision],
                       ['%1.1f' % train_r for train_r in train_recall],
+                      ['%1.1f' % train_ss for train_ss in train_sensitivity],
+                      ['%1.1f' % train_sp for train_sp in train_specificity],
                       ['%1.1f' % train_j for train_j in train_jaccard]]
-        row_labels = ['cls', 'pre', 'rec', 'jac']
+        row_labels = ['cls', 'pre', 'rec', 'sen', 'spe', 'jac']
         current_ax.table(cellText=table_vals, rowLabels=row_labels, cellLoc='center', loc='upper center')
         current_ax.text(0, 0.5, 'avg f1: %1.1f' % train_f1)
         current_ax.text(0, 0.3, best_model.best_params_, wrap=True)
         double_print('metrics on test set:', metrics_file)
         for j, class_j in enumerate(dataset.classes):
-            double_print('class: %s: precision: %1.1f. recall: %1.1f. acc: %1.1f.'
-                         % (class_j, test_precision[j], test_recall[j], test_jaccard[j]),
+            double_print('class: %s: precision: %1.1f. recall: %1.1f. sensitivity: %1.1f. specificity: %1.1f. acc: %1.1f.'
+                         % (class_j, test_precision[j], test_recall[j], test_sensitivity[j], test_specificity[j], test_jaccard[j]),
                          metrics_file)
         double_print('avg f1: %1.1f' % test_f1)
         current_ax = ax[3, i]
@@ -196,8 +212,10 @@ def train_eval(config, exp_path):
         table_vals = [[str(class_i) for class_i in dataset.classes],
                       ['%1.1f' % test_p for test_p in test_precision],
                       ['%1.1f' % test_r for test_r in test_recall],
+                      ['%1.1f' % test_ss for test_ss in test_sensitivity],
+                      ['%1.1f' % test_sp for test_sp in test_specificity],
                       ['%1.1f' % test_j for test_j in test_jaccard]]
-        row_labels = ['cls', 'pre', 'rec', 'jac']
+        row_labels = ['cls', 'pre', 'rec', 'sen', 'spe', 'jac']
         current_ax.table(cellText=table_vals, rowLabels=row_labels, cellLoc='center', loc='upper center')
         current_ax.text(0, 0.2, 'avg f1: %1.1f' % test_f1)
     double_print('marker ave_trian_f1: %1.1f' % (sum(all_marker_train_f1s) / len(all_marker_train_f1s)))

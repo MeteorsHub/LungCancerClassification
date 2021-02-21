@@ -11,6 +11,7 @@ class MarkerExpressionDataset:
         self.data_root = config['data_root']
         self.marker_mapping = config['marker_mapping']
         self.features = config['features']
+        self.data_clean = config.get('data_clean', None)
         self.num_split_fold = int(config['num_split_fold'])
         self.random_seed = float(config['split_random_seed'])
         self.class_mapping = config['class_mapping']
@@ -94,6 +95,12 @@ class MarkerExpressionDataset:
                     'class': item['class'],
                     'feature': feature
                 }
+
+        # data clean
+        # if self.data_clean is not None:
+        #     if self.data_clean['method'] == 'isolation_forest':
+        #         pass
+        #     elif self.data_clean['method'] == 'isolation_forest'
 
         # split fold
         for marker in self.markers:

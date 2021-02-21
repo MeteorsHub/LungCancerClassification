@@ -4,7 +4,7 @@ import os
 
 
 def read_dict_csv(filename: str, return_fieldnames=False) -> (list, list):
-    with open(filename) as f:
+    with open(filename, encoding='utf8') as f:
         f_csv = csv.DictReader(f)
         data = list(f_csv)
         field_names = f_csv.fieldnames
@@ -15,7 +15,7 @@ def read_dict_csv(filename: str, return_fieldnames=False) -> (list, list):
 
 
 def write_dict_csv(filename: str, fieldnames: list, data: list):
-    with open(filename, 'w', newline='') as csv_file:
+    with open(filename, 'w', newline='', encoding='utf8') as csv_file:
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         writer.writeheader()
         for item in data:
@@ -30,7 +30,7 @@ def load_ymal(config_filename) -> dict:
 
 def save_yaml(config_filename, data):
     maybe_create_path(os.path.dirname(config_filename))
-    with open(config_filename, 'w') as f:
+    with open(config_filename, 'w', encoding='utf8') as f:
         yaml.safe_dump(data, f, sort_keys=False)
 
 

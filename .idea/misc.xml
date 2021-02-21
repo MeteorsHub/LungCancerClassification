@@ -1,12 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="ProjectPlainTextFileTypeManager">
-    <file url="file://$PROJECT_DIR$/config/svm/joint_all_feature_class0.yaml" />
-    <file url="file://$PROJECT_DIR$/config/svm/joint_all_feature_class1.yaml" />
-    <file url="file://$PROJECT_DIR$/config/svm/joint_all_feature_class2.yaml" />
-    <file url="file://$PROJECT_DIR$/config/svm/joint_all_feature_class3.yaml" />
-    <file url="file://$PROJECT_DIR$/config/svm/joint_all_feature_class4.yaml" />
-    <file url="file://$PROJECT_DIR$/config/svm/joint_all_feature_class5.yaml" />
-  </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.8 (base)" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.7" project-jdk-type="Python SDK" />
 </project>
