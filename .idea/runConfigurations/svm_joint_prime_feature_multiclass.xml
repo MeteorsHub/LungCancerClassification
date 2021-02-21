@@ -13,7 +13,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/train_eval.py" />
-    <option name="PARAMETERS" value="-c=svm/joint_prime_feature_multiclass -s=d2_n1 -o -r" />
+    <option name="PARAMETERS" value="-c=svm/joint_prime_feature_multiclass -s=d2_n1_dc -o -r" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

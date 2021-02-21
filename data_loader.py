@@ -1,8 +1,11 @@
+import itertools
 import os
 import random
-import itertools
-from scipy.special import perm, comb
-from sklearn.model_selection import KFold, StratifiedKFold
+
+from scipy.special import comb
+from sklearn.ensemble import IsolationForest
+from sklearn.model_selection import StratifiedKFold
+
 from utils import read_dict_csv
 
 
@@ -21,6 +24,7 @@ class MarkerExpressionDataset:
 
         # one bag for the mode contains multiple samples with the same class in original data
         self.sample_data = dict()  # {marker: [fold_0: {id: {name, class, feature]}, fold_1, fold_2...]}.
+        self.outlier_samples = dict()  # {marker: {class: [ids]}}
         self.num_samples = dict()  # {marker: [num_fold_0, num_fold_1...]}
         self.bag_data = dict()  # {marker: [fold_0: [[case_0_sample_ids], [case_1_sample_ids]...], fold_1...]}
         self.k_fold_splitter = None
@@ -97,10 +101,29 @@ class MarkerExpressionDataset:
                 }
 
         # data clean
-        # if self.data_clean is not None:
-        #     if self.data_clean['method'] == 'isolation_forest':
-        #         pass
-        #     elif self.data_clean['method'] == 'isolation_forest'
+        if self.data_clean is not None:
+            for marker in self.markers:
+                self.outlier_samples[marker] = dict()
+                for class_i in self.classes:
+                    if self.data_clean == 'isolation_forest':
+                        clf = IsolationForest(n_estimators=50, random_state=int(self.random_seed * 100))
+                    elif self.data_clean == 'local_outlier_factor':
+                        pass
+                    elif self.data_clean == 'robust_covariance':
+                        pass
+                    elif self.data_clean == 'one_class_svm':
+                        pass
+                    else:
+                        raise AttributeError('unrecognized data clean method: %s' % self.data_clean['method'])
+
+                    sample_ids = [s_id for s_id in list(self.sample_data[marker].keys())
+                                  if self.sample_data[marker][s_id]['class'] == class_i]
+                    sample_features = [self.sample_data[marker][s_id]['feature'] for s_id in sample_ids]
+                    sample_labels = clf.fit_predict(sample_features)
+                    outlier_ids = [sample_ids[i] for i in range(len(sample_ids)) if sample_labels[i] < 0]
+                    self.outlier_samples[marker][class_i] = outlier_ids
+                    for outlier_id in outlier_ids:
+                        self.sample_data[marker].pop(outlier_id)
 
         # split fold
         for marker in self.markers:
