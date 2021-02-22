@@ -1,6 +1,8 @@
 import csv
-import yaml
 import os
+
+import numpy as np
+import yaml
 
 
 def read_dict_csv(filename: str, return_fieldnames=False) -> (list, list):
@@ -44,3 +46,18 @@ def double_print(s, log_file=None, **kwargs):
     print(s, **kwargs)
     if log_file is not None:
         print(s, file=log_file)
+
+
+def get_bounds(feature, method='min_max'):
+    assert method in ['min_max', 'box']
+
+    if method == 'min_max':
+        lower_bound = min(feature)
+        upper_bound = max(feature)
+    elif method == 'box':
+        l, u = np.percentile(feature, (25, 75), interpolation='midpoint')
+        lower_bound = l - 1.5 * (u - l)
+        upper_bound = u + 1.5 * (u - l)
+    else:
+        return
+    return lower_bound, upper_bound

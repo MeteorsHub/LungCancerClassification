@@ -1,20 +1,18 @@
 import argparse
+import glob
 import os
 import pickle
-import glob
-import numpy as np
-import seaborn as sns
-from sklearn import svm, metrics, naive_bayes
-from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
-from sklearn.neural_network import MLPClassifier
-from sklearn.manifold import TSNE
-from sklearn.model_selection import GridSearchCV
-from scipy.interpolate import Rbf
 
 import matplotlib.pyplot as plt
+import numpy as np
+from sklearn import svm, metrics, naive_bayes
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+from sklearn.model_selection import GridSearchCV
+from sklearn.neural_network import MLPClassifier
 
 from data_loader import MarkerExpressionDataset
 from utils import load_ymal, save_yaml, maybe_create_path, double_print
+from visualization import plot_table, plot_feature_distribution
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-c', '--config', type=str, required=False, default='default',
@@ -54,6 +52,17 @@ def evaluate(y_true, y_pred, labels=(1,), average=None):
 
 def train_eval(config, exp_path):
     dataset = MarkerExpressionDataset(config)
+    if dataset.data_clean is not None:
+        with open(os.path.join(exp_path, 'dirty_data.txt'), 'w') as f:
+            f.write('---data clean method: %s---\n' % dataset.data_clean)
+            for marker, item in dataset.outlier_samples.items():
+                f.write('%s\n' % marker)
+                for class_id in dataset.classes:
+                    f.write('class: %s\n' % class_id)
+                    for sample_id in item.keys():
+                        if item[sample_id]['class'] == class_id:
+                            f.write('%s\n' % sample_id)
+
     if config['model'] == 'svm':
         model_class = svm.SVC
     elif config['model'] == 'rdf':
@@ -68,13 +77,13 @@ def train_eval(config, exp_path):
         raise AttributeError('unrecognized model %s' % config['model'])
 
     fig, ax = plt.subplots(6, len(dataset.markers), squeeze=False, figsize=(6*len(dataset.markers), 30))
-    # fig.suptitle(config['model'])
     metrics_file = open(os.path.join(exp_path, 'metrics.txt'), 'w')
     metrics_fig_filename = os.path.join(exp_path, 'conf_mat.png')
     best_params = dict()
     all_marker_train_f1s = []
     all_marker_test_f1s = []
     for i, marker in enumerate(dataset.markers):
+        # parameter search
         print('parameter search for marker %s...' % marker)
         all_x, all_y, cv_index = dataset.get_all_data(marker)
         best_model = GridSearchCV(model_class(),
@@ -86,6 +95,7 @@ def train_eval(config, exp_path):
         best_params[marker] = best_model.best_params_
         print('search done')
 
+        # run train and test
         train_xs = []
         train_ys = []
         pred_train_ys = []
@@ -116,108 +126,63 @@ def train_eval(config, exp_path):
         all_marker_train_f1s.append(train_f1)
         all_marker_test_f1s.append(test_f1)
 
+        # print metrics to console and file
         double_print('marker: %s' % marker, metrics_file)
         double_print('metrics on training set:', metrics_file)
         for j, class_j in enumerate(dataset.classes):
-            double_print('class: %s: precision: %1.1f. recall: %1.1f. sensitivity: %1.1f. specificity: %1.1f. acc: %1.1f.'
-                         % (class_j, train_precision[j], train_recall[j], train_sensitivity[j], train_specificity[j], train_jaccard[j]),
-                         metrics_file)
+            double_print(
+                'class: %s: precision: %1.1f. recall: %1.1f. sensitivity: %1.1f. specificity: %1.1f. acc: %1.1f.'
+                % (class_j, train_precision[j], train_recall[j], train_sensitivity[j], train_specificity[j],
+                   train_jaccard[j]),
+                metrics_file)
         double_print('avg f1: %1.1f' % train_f1)
+        double_print('metrics on test set:', metrics_file)
+        for j, class_j in enumerate(dataset.classes):
+            double_print(
+                'class: %s: precision: %1.1f. recall: %1.1f. sensitivity: %1.1f. specificity: %1.1f. acc: %1.1f.'
+                % (
+                    class_j, test_precision[j], test_recall[j], test_sensitivity[j], test_specificity[j],
+                    test_jaccard[j]),
+                metrics_file)
+        double_print('avg f1: %1.1f' % test_f1)
 
+        # generate figure
         current_ax = ax[0, i]
-        if len(train_xs[0]) == 2:
-            embedded_train_xs = train_xs
-        else:
-            embedded_train_xs = TSNE(n_components=2, init='pca', random_state=1, n_jobs=4).fit_transform(train_xs)
-        x = [item[0] for item in embedded_train_xs]
-        y = [item[1] for item in embedded_train_xs]
-        l_x, u_x = np.percentile(x, (25, 75), interpolation='midpoint')
-        lower_bound_x = max(l_x - 3.0*(u_x - l_x), min(x))
-        upper_bound_x = min(u_x + 3.0*(u_x - l_x), max(x))
-        l_y, u_y = np.percentile(y, (25, 75), interpolation='midpoint')
-        lower_bound_y = max(l_y - 3.0 * (u_y - l_y), min(y))
-        upper_bound_y = min(u_y + 3.0 * (u_y - l_y), max(y))
-        if len(train_xs[0]) == 2:
-            xx, yy = np.meshgrid(np.arange(lower_bound_x, upper_bound_x, (upper_bound_x - lower_bound_x) / 1000),
-                                 np.arange(lower_bound_y, upper_bound_y, (upper_bound_y - lower_bound_y) / 1000))
-            Z = best_model.predict(np.c_[xx.ravel(), yy.ravel()]).reshape(xx.shape)
-            current_ax.contourf(xx, yy, Z, alpha=0.2)
-        sns.scatterplot(x=x, y=y,
-                        style=[str(item) for item in train_ys],
-                        style_order=[str(item) for item in dataset.classes],
-                        hue=[str(item) for item in train_ys],
-                        hue_order=[str(item) for item in dataset.classes],
-                        ax=current_ax)
+        contour_flag = len(train_xs[0]) == 2
+        plot_feature_distribution(train_xs, train_ys, ax=current_ax,
+                                  t_sne=True, label_order=dataset.classes, x_lim='min_max', y_lim='min_max',
+                                  contour=contour_flag, z_generator=best_model.predict)
         current_ax.set_title('%s trained on whole set' % marker)
-        current_ax.legend(loc="best")
-        current_ax.set_xlim(lower_bound_x, upper_bound_x)
-        current_ax.set_ylim(lower_bound_y, upper_bound_y)
 
         current_ax = ax[1, i]
         metrics.ConfusionMatrixDisplay(train_conf_mat, display_labels=dataset.classes).plot(ax=current_ax)
         current_ax.set_title('%s on train set of all folds' % marker)
-        current_ax = ax[2, i]
-        current_ax.axis('off')
-        table_vals = [[str(class_i) for class_i in dataset.classes],
-                      ['%1.1f' % train_p for train_p in train_precision],
-                      ['%1.1f' % train_r for train_r in train_recall],
-                      ['%1.1f' % train_ss for train_ss in train_sensitivity],
-                      ['%1.1f' % train_sp for train_sp in train_specificity],
-                      ['%1.1f' % train_j for train_j in train_jaccard]]
-        row_labels = ['cls', 'pre', 'rec', 'sen', 'spe', 'jac']
-        current_ax.table(cellText=table_vals, rowLabels=row_labels, cellLoc='center', loc='upper center')
-        current_ax.text(0, 0.5, 'avg f1: %1.1f' % train_f1)
-        current_ax.text(0, 0.3, best_model.best_params_, wrap=True)
-        double_print('metrics on test set:', metrics_file)
-        for j, class_j in enumerate(dataset.classes):
-            double_print('class: %s: precision: %1.1f. recall: %1.1f. sensitivity: %1.1f. specificity: %1.1f. acc: %1.1f.'
-                         % (class_j, test_precision[j], test_recall[j], test_sensitivity[j], test_specificity[j], test_jaccard[j]),
-                         metrics_file)
-        double_print('avg f1: %1.1f' % test_f1)
-        current_ax = ax[3, i]
-        if len(train_xs[0]) == 2:
-            embedded_test_xs = test_x
-        else:
-            embedded_test_xs = TSNE(n_components=2, init='pca', random_state=1, n_jobs=4).fit_transform(test_x)
-        x = [item[0] for item in embedded_test_xs]
-        y = [item[1] for item in embedded_test_xs]
 
-        l_x, u_x = np.percentile(x, (25, 75), interpolation='midpoint')
-        lower_bound_x = max(l_x - 3.0 * (u_x - l_x), min(x))
-        upper_bound_x = min(u_x + 3.0 * (u_x - l_x), max(x))
-        l_y, u_y = np.percentile(y, (25, 75), interpolation='midpoint')
-        lower_bound_y = max(l_y - 3.0 * (u_y - l_y), min(y))
-        upper_bound_y = min(u_y + 3.0 * (u_y - l_y), max(y))
-        if len(train_xs[0]) == 2:
-            xx, yy = np.meshgrid(np.arange(lower_bound_x, upper_bound_x, (upper_bound_x - lower_bound_x) / 1000),
-                                 np.arange(lower_bound_y, upper_bound_y, (upper_bound_y - lower_bound_y) / 1000))
-            Z = model.predict(np.c_[xx.ravel(), yy.ravel()]).reshape(xx.shape)
-            current_ax.contourf(xx, yy, Z, alpha=0.2)
-        sns.scatterplot(x=x, y=y,
-                        style=[str(item) for item in test_y],
-                        style_order=[str(item) for item in dataset.classes],
-                        hue=[str(item) for item in test_y],
-                        hue_order=[str(item) for item in dataset.classes],
-                        ax=current_ax)
+        current_ax = ax[2, i]
+        table_val_list = [dataset.classes,
+                          train_precision, train_recall, train_sensitivity, train_specificity, train_jaccard]
+        row_labels = ['cls', 'pre', 'rec', 'sen', 'spe', 'jac']
+        additional_text = ['avg f1: %1.1f' % train_f1, best_model.best_params_]
+        plot_table(table_val_list, row_labels, ax=current_ax, additional_text=additional_text)
+
+        current_ax = ax[3, i]
+        contour_flag = len(train_xs[0]) == 2
+        plot_feature_distribution(test_x, test_y, ax=current_ax,
+                                  t_sne=True, label_order=dataset.classes, x_lim='min_max', y_lim='min_max',
+                                  contour=contour_flag, z_generator=model.predict)
         current_ax.set_title('%s on test set of the last fold' % marker)
-        current_ax.legend(loc="best")
-        current_ax.set_xlim(lower_bound_x, upper_bound_x)
-        current_ax.set_ylim(lower_bound_y, upper_bound_y)
 
         current_ax = ax[4, i]
         metrics.ConfusionMatrixDisplay(test_conf_mat, display_labels=dataset.classes).plot(ax=current_ax)
         current_ax.set_title('%s on test set of all folds' % marker)
+
         current_ax = ax[5, i]
-        current_ax.axis('off')
-        table_vals = [[str(class_i) for class_i in dataset.classes],
-                      ['%1.1f' % test_p for test_p in test_precision],
-                      ['%1.1f' % test_r for test_r in test_recall],
-                      ['%1.1f' % test_ss for test_ss in test_sensitivity],
-                      ['%1.1f' % test_sp for test_sp in test_specificity],
-                      ['%1.1f' % test_j for test_j in test_jaccard]]
+        table_val_list = [dataset.classes,
+                          test_precision, test_recall, test_sensitivity, test_specificity, test_jaccard]
         row_labels = ['cls', 'pre', 'rec', 'sen', 'spe', 'jac']
-        current_ax.table(cellText=table_vals, rowLabels=row_labels, cellLoc='center', loc='upper center')
-        current_ax.text(0, 0.2, 'avg f1: %1.1f' % test_f1)
+        additional_text = ['avg f1: %1.1f' % test_f1]
+        plot_table(table_val_list, row_labels, ax=current_ax, additional_text=additional_text)
+
     double_print('marker ave_trian_f1: %1.1f' % (sum(all_marker_train_f1s) / len(all_marker_train_f1s)))
     double_print('marker ave_test_f1: %1.1f' % (sum(all_marker_test_f1s) / len(all_marker_test_f1s)))
     metrics_file.close()

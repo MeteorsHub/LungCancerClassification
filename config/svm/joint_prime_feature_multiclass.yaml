@@ -1,6 +1,6 @@
 data_root: ./data/version_2
-data_clean: isolation_forest
-marker_mapping:  # can be used as CEA: all or CEA: CEA&SCCA. You can comment a marker to disable it
+data_clean: robust_covariance  # isolation_forest, local_outlier_factor, robust_covariance or one_class_svm
+marker_mapping: # can be used as CEA: all or CEA: CEA&SCCA. You can comment a marker to disable it
   CEA: ALL
   CYFRA21: ALL
   SCCA: ALL

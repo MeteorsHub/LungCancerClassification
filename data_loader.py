@@ -3,8 +3,11 @@ import os
 import random
 
 from scipy.special import comb
+from sklearn.covariance import EllipticEnvelope
 from sklearn.ensemble import IsolationForest
 from sklearn.model_selection import StratifiedKFold
+from sklearn.neighbors import LocalOutlierFactor
+from sklearn.svm import OneClassSVM
 
 from utils import read_dict_csv
 
@@ -23,8 +26,8 @@ class MarkerExpressionDataset:
         self.num_bags_limitation = int(config.get('num_bags_limitation', 10000))
 
         # one bag for the mode contains multiple samples with the same class in original data
-        self.sample_data = dict()  # {marker: [fold_0: {id: {name, class, feature]}, fold_1, fold_2...]}.
-        self.outlier_samples = dict()  # {marker: {class: [ids]}}
+        self.sample_data = dict()  # {marker: [fold_0: {id: {name, class, feature}}, fold_1, fold_2...]}.
+        self.outlier_samples = dict()  # {marker: {id: {name, class, feature}}}
         self.num_samples = dict()  # {marker: [num_fold_0, num_fold_1...]}
         self.bag_data = dict()  # {marker: [fold_0: [[case_0_sample_ids], [case_1_sample_ids]...], fold_1...]}
         self.k_fold_splitter = None
@@ -108,11 +111,11 @@ class MarkerExpressionDataset:
                     if self.data_clean == 'isolation_forest':
                         clf = IsolationForest(n_estimators=50, random_state=int(self.random_seed * 100))
                     elif self.data_clean == 'local_outlier_factor':
-                        pass
+                        clf = LocalOutlierFactor(n_neighbors=5)
                     elif self.data_clean == 'robust_covariance':
-                        pass
+                        clf = EllipticEnvelope(random_state=int(self.random_seed * 100))
                     elif self.data_clean == 'one_class_svm':
-                        pass
+                        clf = OneClassSVM(kernel='linear')
                     else:
                         raise AttributeError('unrecognized data clean method: %s' % self.data_clean['method'])
 
@@ -121,14 +124,12 @@ class MarkerExpressionDataset:
                     sample_features = [self.sample_data[marker][s_id]['feature'] for s_id in sample_ids]
                     sample_labels = clf.fit_predict(sample_features)
                     outlier_ids = [sample_ids[i] for i in range(len(sample_ids)) if sample_labels[i] < 0]
-                    self.outlier_samples[marker][class_i] = outlier_ids
                     for outlier_id in outlier_ids:
-                        self.sample_data[marker].pop(outlier_id)
+                        self.outlier_samples[marker][outlier_id] = self.sample_data[marker].pop(outlier_id)
 
         # split fold
         for marker in self.markers:
             self.num_samples[marker] = []
-            num_samples = len(self.sample_data[marker])
             sample_ids = list(self.sample_data[marker].keys())
             random.shuffle(sample_ids)
             sample_classes = [self.sample_data[marker][sample_id]['class'] for sample_id in sample_ids]
@@ -234,3 +235,22 @@ class MarkerExpressionDataset:
                         train_x.append(bag_x)
                         train_y.append(bag_y)
             yield train_x, train_y, test_x, test_y
+
+    def plot_data_clean_distribution(self, ax, marker):
+        clean_data = dict()
+        for fold_data in self.sample_data[marker]:
+            clean_data = {**clean_data, **fold_data}
+        dirty_data = self.outlier_samples[marker]
+
+        labels = []
+        for class_id in self.classes:
+            labels.append(str(class_id))
+            labels.append('%s_dirty' % class_id)
+        all_samples = []
+        all_labels = []
+        for clean_sample_id, clean_sample_data in clean_data.items():
+            all_labels.append(str(clean_sample_data['class']))
+            all_samples.append(clean_sample_data['feature'])
+        for dirty_sample_id, dirty_sample_data in dirty_data.items():
+            all_labels.append('%s_dirty' % dirty_sample_data['class'])
+            all_samples.append(dirty_sample_data['feature'])
