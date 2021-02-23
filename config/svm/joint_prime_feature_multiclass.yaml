@@ -1,14 +1,19 @@
-data_root: ./data/version_1
-#data_clean: isolation_forest  # isolation_forest, local_outlier_factor, robust_covariance or one_class_svm
+data_root: ./data/version_2
+data_clean: local_outlier_factor  # isolation_forest, local_outlier_factor, robust_covariance or one_class_svm
 marker_mapping: # can be used as CEA: all or CEA: CEA&SCCA. You can comment a marker to disable it
   CEA: ALL
   CYFRA21: ALL
   SCCA: ALL
   NSE: ALL
-  GRP: ALL
+  ProGRP: ALL
   CA125: ALL
   EGFR: ALL
   IDH1: ALL
+  CGA: ALL
+  TTF1: ALL
+  SYN: ALL
+  CD56: ALL
+  TPA: ALL
 features:
 #  - Ct1
 #  - Ct2
@@ -40,8 +45,5 @@ num_samples_in_each_bag: 1  # samples: original sample study. bag: model input w
 model: svm
 model_kwargs:
   kernel: [linear, poly, rbf, sigmoid]
-  gamma: [scale, auto]
-  coef0: [0, 0.1, 0.5]
-  tol: [0.00001, 0.001, 0.1]
-  C: [0.0001, 0.001, 0.01, 0.1, 1]
+  C: [ 0.001, 0.1, 1, 10 ]
   class_weight: [balanced]

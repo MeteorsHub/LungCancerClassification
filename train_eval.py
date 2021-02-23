@@ -46,11 +46,17 @@ def evaluate(y_true, y_pred, labels=(1,), average=None, num_fold=None):
                 all_negative_ps += ps[j]
         specificity[i] = all_negative_tps / all_negative_ps
     specificity *= 100
-    f1 = 100*metrics.f1_score(y_true, y_pred, average='macro')
+    f1 = 100 * metrics.f1_score(y_true, y_pred, average='macro')
 
     if num_fold is None:
         return precision, recall, sensitivity, specificity, jaccard, conf_mat, f1
-    # TODO: f1-std
+    all_fold_f1s = []
+    for fold_i in range(num_fold):
+        start_i = fold_i * len(y_true) // num_fold
+        end_i = (fold_i + 1) * len(y_true) // num_fold
+        all_fold_f1s.append(100 * metrics.f1_score(y_true[start_i:end_i], y_pred[start_i:end_i], average='macro'))
+    f1_std = np.std(all_fold_f1s)
+    return precision, recall, sensitivity, specificity, jaccard, conf_mat, f1, f1_std
 
 
 def train_eval(config, exp_path):
@@ -84,7 +90,9 @@ def train_eval(config, exp_path):
     metrics_fig_filename = os.path.join(exp_path, 'conf_mat.png')
     best_params = dict()
     all_marker_train_f1s = []
+    all_marker_train_f1_stds = []
     all_marker_test_f1s = []
+    all_marker_test_f1_stds = []
     for i, marker in enumerate(dataset.markers):
         # parameter search
         print('parameter search for marker %s...' % marker)
@@ -122,12 +130,16 @@ def train_eval(config, exp_path):
             maybe_create_path(os.path.dirname(model_filename))
             with open(model_filename, 'wb') as f:
                 pickle.dump(model, f)
-        train_precision, train_recall, train_sensitivity, train_specificity, train_jaccard, train_conf_mat, train_f1 = \
-            evaluate(train_ys, pred_train_ys, dataset.classes, None)
-        test_precision, test_recall, test_sensitivity, test_specificity, test_jaccard, test_conf_mat, test_f1 = \
-            evaluate(test_ys, pred_test_ys, dataset.classes, None)
+        train_precision, train_recall, train_sensitivity, train_specificity, \
+        train_jaccard, train_conf_mat, train_f1, train_f1_std = \
+            evaluate(train_ys, pred_train_ys, dataset.classes, None, num_fold=dataset.num_fold)
+        test_precision, test_recall, test_sensitivity, test_specificity, \
+        test_jaccard, test_conf_mat, test_f1, test_f1_std = \
+            evaluate(test_ys, pred_test_ys, dataset.classes, None, num_fold=dataset.num_fold)
         all_marker_train_f1s.append(train_f1)
+        all_marker_train_f1_stds.append(train_f1_std)
         all_marker_test_f1s.append(test_f1)
+        all_marker_test_f1_stds.append(test_f1_std)
 
         # print metrics to console and file
         double_print('marker: %s' % marker, metrics_file)
@@ -139,6 +151,7 @@ def train_eval(config, exp_path):
                    train_jaccard[j]),
                 metrics_file)
         double_print('avg f1: %1.1f' % train_f1, metrics_file)
+        double_print('f1 std: %1.1f' % train_f1_std, metrics_file)
         double_print('metrics on test set:', metrics_file)
         for j, class_j in enumerate(dataset.classes):
             double_print(
@@ -148,6 +161,7 @@ def train_eval(config, exp_path):
                     test_jaccard[j]),
                 metrics_file)
         double_print('avg f1: %1.1f' % test_f1, metrics_file)
+        double_print('f1 std: %1.1f' % test_f1_std, metrics_file)
 
         # generate figure
         current_ax = ax[0, i]
@@ -179,7 +193,7 @@ def train_eval(config, exp_path):
         table_val_list = [dataset.classes,
                           train_precision, train_recall, train_sensitivity, train_specificity, train_jaccard]
         row_labels = ['cls', 'pre', 'rec', 'sen', 'spe', 'jac']
-        additional_text = ['avg f1: %1.1f' % train_f1, best_model.best_params_]
+        additional_text = ['avg f1: %1.1f' % train_f1, 'f1 std: %1.1f' % train_f1_std, best_model.best_params_, ]
         plot_table(table_val_list, row_labels, ax=current_ax, additional_text=additional_text)
 
         current_ax = ax[4, i]
@@ -201,11 +215,15 @@ def train_eval(config, exp_path):
         table_val_list = [dataset.classes,
                           test_precision, test_recall, test_sensitivity, test_specificity, test_jaccard]
         row_labels = ['cls', 'pre', 'rec', 'sen', 'spe', 'jac']
-        additional_text = ['avg f1: %1.1f' % test_f1]
+        additional_text = ['avg f1: %1.1f' % test_f1, 'f1 std: %1.1f' % test_f1_std]
         plot_table(table_val_list, row_labels, ax=current_ax, additional_text=additional_text)
 
     double_print('marker ave_trian_f1: %1.1f' % (sum(all_marker_train_f1s) / len(all_marker_train_f1s)), metrics_file)
+    double_print('marker ave_trian_f1_std: %1.1f' % (sum(all_marker_train_f1_stds) / len(all_marker_train_f1_stds)),
+                 metrics_file)
     double_print('marker ave_test_f1: %1.1f' % (sum(all_marker_test_f1s) / len(all_marker_test_f1s)), metrics_file)
+    double_print('marker ave_test_f1_std: %1.1f' % (sum(all_marker_test_f1_stds) / len(all_marker_test_f1_stds)),
+                 metrics_file)
     metrics_file.close()
     save_yaml(os.path.join(exp_path, 'best_params.yaml'), best_params)
     fig.savefig(metrics_fig_filename, bbox_inches='tight', pad_inches=1)
