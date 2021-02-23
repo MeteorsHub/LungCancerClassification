@@ -48,16 +48,24 @@ def double_print(s, log_file=None, **kwargs):
         print(s, file=log_file)
 
 
-def get_bounds(feature, method='min_max'):
-    assert method in ['min_max', 'box']
+def get_bounds(feature, method='min_max', extend_factor=0.1):
+    assert method in ['min_max', 'min_max_extend', 'box']
 
     if method == 'min_max':
         lower_bound = min(feature)
         upper_bound = max(feature)
+    elif method == 'min_max_extend':
+        min_val = min(feature)
+        max_val = max(feature)
+        lower_bound = min_val - extend_factor*(max_val - min_val)
+        upper_bound = max_val + extend_factor*(max_val - min_val)
     elif method == 'box':
         l, u = np.percentile(feature, (25, 75), interpolation='midpoint')
         lower_bound = l - 1.5 * (u - l)
         upper_bound = u + 1.5 * (u - l)
     else:
         return
+    if lower_bound == upper_bound:
+        lower_bound -= 0.25
+        upper_bound += 1
     return lower_bound, upper_bound

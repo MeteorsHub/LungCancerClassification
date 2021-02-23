@@ -26,7 +26,7 @@ parser.add_argument('-o', '--overwrite_config', action='store_true',
 args = parser.parse_args()
 
 
-def evaluate(y_true, y_pred, labels=(1,), average=None):
+def evaluate(y_true, y_pred, labels=(1,), average=None, num_fold=None):
     precision = 100*metrics.precision_score(y_true, y_pred, labels=labels, average=average)
     recall = 100*metrics.recall_score(y_true, y_pred, labels=labels, average=average)
 
@@ -47,7 +47,10 @@ def evaluate(y_true, y_pred, labels=(1,), average=None):
         specificity[i] = all_negative_tps / all_negative_ps
     specificity *= 100
     f1 = 100*metrics.f1_score(y_true, y_pred, average='macro')
-    return precision, recall, sensitivity, specificity, jaccard, conf_mat, f1
+
+    if num_fold is None:
+        return precision, recall, sensitivity, specificity, jaccard, conf_mat, f1
+    # TODO: f1-std
 
 
 def train_eval(config, exp_path):
@@ -56,12 +59,12 @@ def train_eval(config, exp_path):
         with open(os.path.join(exp_path, 'dirty_data.txt'), 'w') as f:
             f.write('---data clean method: %s---\n' % dataset.data_clean)
             for marker, item in dataset.outlier_samples.items():
-                f.write('%s\n' % marker)
+                f.write('marker %s:\n' % marker)
                 for class_id in dataset.classes:
-                    f.write('class: %s\n' % class_id)
+                    f.write('class %s:\n' % class_id)
                     for sample_id in item.keys():
                         if item[sample_id]['class'] == class_id:
-                            f.write('%s\n' % sample_id)
+                            f.write('\t%s\n' % sample_id)
 
     if config['model'] == 'svm':
         model_class = svm.SVC
@@ -76,7 +79,7 @@ def train_eval(config, exp_path):
     else:
         raise AttributeError('unrecognized model %s' % config['model'])
 
-    fig, ax = plt.subplots(6, len(dataset.markers), squeeze=False, figsize=(6*len(dataset.markers), 30))
+    fig, ax = plt.subplots(7, len(dataset.markers), squeeze=False, figsize=(6*len(dataset.markers), 30))
     metrics_file = open(os.path.join(exp_path, 'metrics.txt'), 'w')
     metrics_fig_filename = os.path.join(exp_path, 'conf_mat.png')
     best_params = dict()
@@ -135,7 +138,7 @@ def train_eval(config, exp_path):
                 % (class_j, train_precision[j], train_recall[j], train_sensitivity[j], train_specificity[j],
                    train_jaccard[j]),
                 metrics_file)
-        double_print('avg f1: %1.1f' % train_f1)
+        double_print('avg f1: %1.1f' % train_f1, metrics_file)
         double_print('metrics on test set:', metrics_file)
         for j, class_j in enumerate(dataset.classes):
             double_print(
@@ -144,47 +147,65 @@ def train_eval(config, exp_path):
                     class_j, test_precision[j], test_recall[j], test_sensitivity[j], test_specificity[j],
                     test_jaccard[j]),
                 metrics_file)
-        double_print('avg f1: %1.1f' % test_f1)
+        double_print('avg f1: %1.1f' % test_f1, metrics_file)
 
         # generate figure
         current_ax = ax[0, i]
+        dataset.plot_data_clean_distribution(current_ax, marker)
+        current_ax.set_title('data cleaning on marker %s' % marker)
+
+        current_ax = ax[1, i]
         contour_flag = len(train_xs[0]) == 2
-        plot_feature_distribution(train_xs, train_ys, ax=current_ax,
-                                  t_sne=True, label_order=dataset.classes, x_lim='min_max', y_lim='min_max',
+        # dup_reduced = list(tuple(tuple([train_xs[j] + [train_ys[j]] for j in range(len(train_xs))])))
+        # dup_reduced_train_xs = [item[:-1] for item in dup_reduced]
+        # dup_reduced_train_ys = [item[-1] for item in dup_reduced]
+        # dup_reduced_train_ys_str = [str(item) for item in dup_reduced_train_ys]
+        dup_reduced_train_xs = train_x + test_x
+        dup_reduced_train_ys = train_y + test_y
+        dup_reduced_train_ys_str = [str(item) for item in dup_reduced_train_ys]
+        classes_str = [str(item) for item in dataset.classes]
+        plot_feature_distribution(dup_reduced_train_xs, ax=current_ax, t_sne=True,
+                                  hue=dup_reduced_train_ys_str, hue_order=classes_str,
+                                  style=dup_reduced_train_ys_str, style_order=classes_str,
+                                  x_lim='min_max_extend', y_lim='min_max_extend',
                                   contour=contour_flag, z_generator=best_model.predict)
         current_ax.set_title('%s trained on whole set' % marker)
 
-        current_ax = ax[1, i]
+        current_ax = ax[2, i]
         metrics.ConfusionMatrixDisplay(train_conf_mat, display_labels=dataset.classes).plot(ax=current_ax)
         current_ax.set_title('%s on train set of all folds' % marker)
 
-        current_ax = ax[2, i]
+        current_ax = ax[3, i]
         table_val_list = [dataset.classes,
                           train_precision, train_recall, train_sensitivity, train_specificity, train_jaccard]
         row_labels = ['cls', 'pre', 'rec', 'sen', 'spe', 'jac']
         additional_text = ['avg f1: %1.1f' % train_f1, best_model.best_params_]
         plot_table(table_val_list, row_labels, ax=current_ax, additional_text=additional_text)
 
-        current_ax = ax[3, i]
+        current_ax = ax[4, i]
         contour_flag = len(train_xs[0]) == 2
-        plot_feature_distribution(test_x, test_y, ax=current_ax,
-                                  t_sne=True, label_order=dataset.classes, x_lim='min_max', y_lim='min_max',
+        test_y_str = [str(item) for item in test_y]
+        classes_str = [str(item) for item in dataset.classes]
+        plot_feature_distribution(test_x, ax=current_ax, t_sne=True,
+                                  hue=test_y_str, hue_order=classes_str,
+                                  style=test_y_str, style_order=classes_str,
+                                  x_lim='min_max_extend', y_lim='min_max_extend',
                                   contour=contour_flag, z_generator=model.predict)
         current_ax.set_title('%s on test set of the last fold' % marker)
 
-        current_ax = ax[4, i]
+        current_ax = ax[5, i]
         metrics.ConfusionMatrixDisplay(test_conf_mat, display_labels=dataset.classes).plot(ax=current_ax)
         current_ax.set_title('%s on test set of all folds' % marker)
 
-        current_ax = ax[5, i]
+        current_ax = ax[6, i]
         table_val_list = [dataset.classes,
                           test_precision, test_recall, test_sensitivity, test_specificity, test_jaccard]
         row_labels = ['cls', 'pre', 'rec', 'sen', 'spe', 'jac']
         additional_text = ['avg f1: %1.1f' % test_f1]
         plot_table(table_val_list, row_labels, ax=current_ax, additional_text=additional_text)
 
-    double_print('marker ave_trian_f1: %1.1f' % (sum(all_marker_train_f1s) / len(all_marker_train_f1s)))
-    double_print('marker ave_test_f1: %1.1f' % (sum(all_marker_test_f1s) / len(all_marker_test_f1s)))
+    double_print('marker ave_trian_f1: %1.1f' % (sum(all_marker_train_f1s) / len(all_marker_train_f1s)), metrics_file)
+    double_print('marker ave_test_f1: %1.1f' % (sum(all_marker_test_f1s) / len(all_marker_test_f1s)), metrics_file)
     metrics_file.close()
     save_yaml(os.path.join(exp_path, 'best_params.yaml'), best_params)
     fig.savefig(metrics_fig_filename, bbox_inches='tight', pad_inches=1)

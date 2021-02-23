@@ -1,19 +1,14 @@
-data_root: ./data/version_2
-data_clean: robust_covariance  # isolation_forest, local_outlier_factor, robust_covariance or one_class_svm
+data_root: ./data/version_1
+#data_clean: isolation_forest  # isolation_forest, local_outlier_factor, robust_covariance or one_class_svm
 marker_mapping: # can be used as CEA: all or CEA: CEA&SCCA. You can comment a marker to disable it
   CEA: ALL
   CYFRA21: ALL
   SCCA: ALL
   NSE: ALL
-  ProGRP: ALL
+  GRP: ALL
   CA125: ALL
   EGFR: ALL
   IDH1: ALL
-  CGA: ALL
-  TTF1: ALL
-  SYN: ALL
-  CD56: ALL
-  TPA: ALL
 features:
 #  - Ct1
 #  - Ct2
@@ -27,7 +22,7 @@ features:
 #  - Fold 1
 #  - Fold 2
   - Ave Fold
-#  - sd
+  - sd
 class_mapping:  # You can comment a class to disable it
   0: 0
   1: 1
@@ -35,7 +30,8 @@ class_mapping:  # You can comment a class to disable it
   3: 3
 #  4: 4
   5: 5
-num_split_fold: 5  # num-fold strategy to split train and eval dataset
+num_split_fold: 3  # num-fold strategy to split train and eval dataset
+num_repeat_split_fold: 10  # for RepeatedKFold
 split_random_seed: 0.1
 # if None, only use the samples that has all markers. or set the default value.
 default_missing_value: null
