@@ -101,7 +101,7 @@ def train_eval(config, exp_path):
                                   param_grid=config['model_kwargs'],
                                   n_jobs=4,
                                   cv=cv_index,
-                                  scoring='recall_macro')
+                                  scoring='recall_micro')
         best_model.fit(all_x, all_y)
         best_params[marker] = best_model.best_params_
         print('search done')
