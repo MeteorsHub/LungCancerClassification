@@ -175,23 +175,23 @@ class MarkerExpressionDataset:
                                             class_i, marker))
                     if comb(len(fold_train_sample_ids_per_class[class_i]), self.num_samples_in_each_bag) \
                             <= self.num_bags_limitation:
-                        print('marker %s class %s train bags use combination.' % (marker, class_i))
+                        # print('marker %s class %s train bags use combination.' % (marker, class_i))
                         for bag in itertools.combinations(fold_train_sample_ids_per_class[class_i],
                                                           self.num_samples_in_each_bag):
                             fold_train_bags.append(bag)
                     else:
-                        print('marker %s class %s train bags use random select.' % (marker, class_i))
+                        # print('marker %s class %s train bags use random select.' % (marker, class_i))
                         for _ in range(self.num_bags_limitation):
                             fold_train_bags.append(random.sample(fold_train_sample_ids_per_class[class_i],
                                                                  k=self.num_samples_in_each_bag))
                     if comb(len(fold_test_sample_ids_per_class[class_i]), self.num_samples_in_each_bag) \
                             <= self.num_bags_limitation:
-                        print('marker %s class %s test bags use combination.' % (marker, class_i))
+                        # print('marker %s class %s test bags use combination.' % (marker, class_i))
                         for bag in itertools.combinations(fold_test_sample_ids_per_class[class_i],
                                                           self.num_samples_in_each_bag):
                             fold_test_bags.append(bag)
                     else:
-                        print('marker %s class %s test bags use random select.' % (marker, class_i))
+                        # print('marker %s class %s test bags use random select.' % (marker, class_i))
                         for _ in range(self.num_bags_limitation):
                             fold_test_bags.append(random.sample(fold_test_sample_ids_per_class[class_i],
                                                                  k=self.num_samples_in_each_bag))

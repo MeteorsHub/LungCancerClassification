@@ -1,5 +1,5 @@
 data_root: ./data/version_2
-marker_mapping:  # can be used as CEA: all or CEA: CEA&SCCA. You can comment a marker to disable it
+marker_mapping: # can be used as CEA: all or CEA: CEA&SCCA. You can comment a marker to disable it
   CEA: ALL
   CYFRA21: ALL
   SCCA: ALL
@@ -14,17 +14,17 @@ marker_mapping:  # can be used as CEA: all or CEA: CEA&SCCA. You can comment a m
   CD56: ALL
   TPA: ALL
 features:
-  - Ct1
-  - Ct2
-  - GAPDH1
-  - GAPDH2
-  - GAPDHmean
-  - ΔCt 1
-  - ΔCt 2
-  - ΔΔCt 1
-  - ΔΔCt 2
-  - Fold 1
-  - Fold 2
+  #  - Ct1
+  #  - Ct2
+  #  - GAPDH1
+  #  - GAPDH2
+  #  - GAPDHmean
+  #  - ΔCt 1
+  #  - ΔCt 2
+  #  - ΔΔCt 1
+  #  - ΔΔCt 2
+  #  - Fold 1
+  #  - Fold 2
   - Ave Fold
   - sd
 class_mapping: # You can comment a class to disable it
@@ -47,6 +47,6 @@ model_kwargs:
   activation: [ relu, identity ]
   solver: [ adam ]
   batch_size: [ 32, auto ]
-  learning_rate: [invascaling, adaptive]
-  early_stopping: [false, true]
-  random_state: [10]
+  learning_rate: [ invascaling, adaptive ]
+  early_stopping: [ false, true ]
+  random_state: [ 10 ]

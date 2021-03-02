@@ -8,7 +8,9 @@ import numpy as np
 from sklearn import svm, metrics, naive_bayes
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.model_selection import GridSearchCV
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
+from sklearn.tree import DecisionTreeClassifier
 
 from data_loader import MarkerExpressionDataset
 from utils import load_ymal, save_yaml, maybe_create_path, double_print
@@ -82,6 +84,10 @@ def train_eval(config, exp_path):
         model_class = naive_bayes.GaussianNB
     elif config['model'] == 'mlp':
         model_class = MLPClassifier
+    elif config['model'] == 'k_neighbors':
+        model_class = KNeighborsClassifier
+    elif config['model'] == 'decision_tree':
+        model_class = DecisionTreeClassifier
     else:
         raise AttributeError('unrecognized model %s' % config['model'])
 
@@ -99,9 +105,8 @@ def train_eval(config, exp_path):
         all_x, all_y, cv_index = dataset.get_all_data(marker)
         best_model = GridSearchCV(model_class(),
                                   param_grid=config['model_kwargs'],
-                                  n_jobs=4,
                                   cv=cv_index,
-                                  scoring='recall_micro')
+                                  scoring='f1_macro')
         best_model.fit(all_x, all_y)
         best_params[marker] = best_model.best_params_
         print('search done')
