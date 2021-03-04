@@ -45,5 +45,6 @@ num_samples_in_each_bag: 1  # samples: original sample study. bag: model input w
 model: svm
 model_kwargs:
   kernel: [linear, poly, rbf, sigmoid]
-  C: [ 0.001, 0.1, 1, 10 ]
+  C: [ 0.001, 0.1, 1, 10, 30 ]
   class_weight: [balanced]
+  probability: [ true ]

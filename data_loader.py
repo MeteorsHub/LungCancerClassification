@@ -5,11 +5,12 @@ import random
 from scipy.special import comb
 from sklearn.covariance import EllipticEnvelope
 from sklearn.ensemble import IsolationForest
+from sklearn.feature_selection import SelectFromModel
 from sklearn.model_selection import RepeatedStratifiedKFold
 from sklearn.neighbors import LocalOutlierFactor
-from sklearn.svm import OneClassSVM
+from sklearn.svm import OneClassSVM, LinearSVC
 
-from utils import read_dict_csv
+from utils import read_dict_csv, unstack
 from visualization import plot_feature_distribution
 
 
@@ -19,6 +20,8 @@ class MarkerExpressionDataset:
         self.marker_mapping = config['marker_mapping']
         self.features = config['features']
         self.data_clean = config.get('data_clean', None)
+        self.feature_selection = config.get('feature_selection', None)
+        self.feature_selector = None
         self.num_split_fold_single = int(config['num_split_fold'])
         self.num_split_fold_repeat_times = int(config.get('num_repeat_split_fold', '1'))
         self.num_fold = self.num_split_fold_single * self.num_split_fold_repeat_times
@@ -55,13 +58,23 @@ class MarkerExpressionDataset:
         self.k_fold_splitter = RepeatedStratifiedKFold(
             n_splits=self.num_split_fold_single,
             n_repeats=self.num_split_fold_repeat_times,
-            random_state=int(100*self.random_seed))
+            random_state=int(100 * self.random_seed))
         self.classes = list(set(list(self.class_mapping.values())))
-        self.classes.sort(key=list(self.class_mapping.values()).index)
+        # self.classes.sort(key=list(self.class_mapping.values()).index)
+        self.classes.sort()
         self.markers = list(set(list(self.marker_mapping.values())))
         self.markers.sort(key=list(self.marker_mapping.values()).index)
         for marker in self.markers:
             self.sample_data[marker] = dict()
+        if self.feature_selection is not None:
+            self.feature_selector = dict()
+            for marker in self.markers:
+                if self.feature_selection['method'] == 'select_from_model':
+                    self.feature_selector[marker] = SelectFromModel(
+                        estimator=LinearSVC(C=0.001, class_weight='balanced', penalty='l1', dual=False),
+                        **self.feature_selection['kwargs'])
+                else:
+                    raise AttributeError('unrecognized feature selection method: %s' % self.feature_selection['method'])
         assert self.num_samples_in_each_bag > 0
         random.seed(self.random_seed)
         self.load()
@@ -194,10 +207,16 @@ class MarkerExpressionDataset:
                         # print('marker %s class %s test bags use random select.' % (marker, class_i))
                         for _ in range(self.num_bags_limitation):
                             fold_test_bags.append(random.sample(fold_test_sample_ids_per_class[class_i],
-                                                                 k=self.num_samples_in_each_bag))
+                                                                k=self.num_samples_in_each_bag))
                 random.shuffle(fold_train_bags)
                 random.shuffle(fold_test_bags)
                 self.bag_data_split_fold[marker].append({'train': fold_train_bags, 'test': fold_test_bags})
+
+        # feature selection
+        if self.feature_selector is not None:
+            for marker in self.markers:
+                all_xs, all_ys, _ = self.get_all_data(marker, without_transform=True)
+                self.feature_selector[marker].fit(all_xs, all_ys)
 
     def get_bag_feature_class(self, marker, sample_ids):
         bag_class = None
@@ -211,7 +230,7 @@ class MarkerExpressionDataset:
             bag_feature += item['feature']
         return bag_feature, bag_class
 
-    def get_all_data(self, marker):
+    def get_all_data(self, marker, without_transform=False):
         assert marker in self.markers, 'marker %s not in self.markers' % marker
 
         all_bag_feature = []
@@ -238,6 +257,9 @@ class MarkerExpressionDataset:
                 index_pointer += 1
             cv_index.append((train_indexes, test_indexes))
 
+        if not without_transform and self.feature_selector is not None:
+            all_bag_feature = unstack(self.feature_selector[marker].transform(all_bag_feature))
+
         return all_bag_feature, all_bag_class, cv_index
 
     def get_split_data(self, marker):
@@ -259,6 +281,10 @@ class MarkerExpressionDataset:
                 bag_feature, bag_class = self.get_bag_feature_class(marker, test_bag)
                 test_feature.append(bag_feature)
                 test_class.append(bag_class)
+
+            if self.feature_selector is not None:
+                train_feature = unstack(self.feature_selector[marker].transform(train_feature))
+                test_feature = unstack(self.feature_selector[marker].transform(test_feature))
             yield train_feature, train_class, test_feature, test_class
 
     def plot_data_clean_distribution(self, ax, marker):

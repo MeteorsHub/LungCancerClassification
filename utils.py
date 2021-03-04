@@ -69,3 +69,7 @@ def get_bounds(feature, method='min_max', extend_factor=0.1):
         lower_bound -= 0.25
         upper_bound += 1
     return lower_bound, upper_bound
+
+
+def unstack(a, axis=0):
+    return [np.squeeze(e, axis) for e in np.split(a, a.shape[axis], axis=axis)]
