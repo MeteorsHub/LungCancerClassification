@@ -1,0 +1,72 @@
+data_root: ./data/version_2
+#data_clean: local_outlier_factor  # isolation_forest, local_outlier_factor, robust_covariance or one_class_svm
+marker_mapping: # can be used as CEA: all or CEA: CEA&SCCA. You can comment a marker to disable it
+  CEA: ALL
+  CYFRA21: ALL
+  SCCA: ALL
+  NSE: ALL
+  ProGRP: ALL
+  CA125: ALL
+  EGFR: ALL
+  IDH1: ALL
+  CGA: ALL
+  TTF1: ALL
+  SYN: ALL
+  CD56: ALL
+  TPA: ALL
+features:
+  #  - Ct1
+  #  - Ct2
+  #  - GAPDH1
+  #  - GAPDH2
+  #  - GAPDHmean
+  #  - ΔCt 1
+  #  - ΔCt 2
+  #  - ΔΔCt 1
+  #  - ΔΔCt 2
+  #  - Fold 1
+  #  - Fold 2
+  - Ave Fold
+  - sd
+class_mapping: # You can comment a class to disable it
+  0: 0
+  1: 1
+  2: 2
+  3: 3
+  #  4: 4
+  5: 5
+num_split_fold: 3  # num-fold strategy to split train and eval dataset
+num_repeat_split_fold: 10  # for RepeatedKFold
+split_random_seed: 0.1
+# if None, only use the samples that has all markers. or set the default value.
+default_missing_value: null
+num_samples_in_each_bag: 1  # samples: original sample study. bag: model input with the same class
+
+model: voting
+sub_model:
+  - model: svm
+    model_name: linear_svm
+  - model: svm
+    model_name: rbf_svm
+  - model: k_neighbors
+    model_name: knn
+  - model: rdf
+    model_name: rdf
+model_kwargs:
+  voting: [ soft ]
+  linear_svm__kernel: [ linear ]
+  linear_svm__C: [ 0.0001, 0.001, 0.01, 0.1 ]
+  linear_svm__class_weight: [ balanced ]
+  linear_svm__probability: [ true ]
+  rbf_svm__kernel: [ rbf ]
+  rbf_svm__C: [ 0.1, 1, 10, 30 ]
+  rbf_svm__class_weight: [ balanced ]
+  rbf_svm__probability: [ true ]
+  knn__n_neighbors: [ 3, 5, 10 ]
+  knn__weights: [ uniform, distance ]
+  knn__algorithm: [ ball_tree, kd_tree, brute ]
+  knn__metric: [ euclidean, manhattan, chebyshev ]
+  rdf__n_estimators: [ 10, 100 ]
+  rdf__criterion: [ gini, entropy ]
+  rdf__max_depth: [ 5, 10, 50 ]
+  rdf__class_weight: [ balanced ]

@@ -24,23 +24,31 @@ features:
 #  - ΔΔCt 1
 #  - ΔΔCt 2
 #  - Fold 1
-#  - Fold 2
+  #  - Fold 2
   - Ave Fold
-#  - sd
-class_mapping:  # You can comment a class to disable it
+  - sd
+class_mapping: # You can comment a class to disable it
   0: 0
   1: 1
   2: 2
   3: 3
-#  4: 4
-#  5: 5
-num_split_fold: 5  # num-fold strategy to split train and eval dataset
+  #  4: 4
+  5: 5
+num_split_fold: 3  # num-fold strategy to split train and eval dataset
+num_repeat_split_fold: 10  # for RepeatedKFold
 split_random_seed: 0.1
 # if None, only use the samples that has all markers. or set the default value.
 default_missing_value: null
 
 model: adaboost
+sub_model:
+  model: svm
+  model_kwargs:
+    C: 0.001
+    class_weight: balanced
+    kernel: linear
+    probability: true
 model_kwargs:
   n_estimators: [10, 50, 100]
-  learning_rate: [0.1, 1, 10]
+  learning_rate: [ 0.01, 0.1, 1 ]
   algorithm: [SAMME, SAMME.R]

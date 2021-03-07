@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="decision_tree/joint_prime_feature_biclass" type="PythonConfigurationType" factoryName="Python" folderName="Decision_tree" singleton="false">
+  <configuration default="false" name="decision_tree/joint_prime_feature_biclass" type="PythonConfigurationType" factoryName="Python" folderName="decision_tree" singleton="false">
     <module name="LungCancerClassification" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />

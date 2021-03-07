@@ -1,5 +1,5 @@
 data_root: ./data/version_2
-data_clean: local_outlier_factor  # isolation_forest, local_outlier_factor, robust_covariance or one_class_svm
+#data_clean: local_outlier_factor  # isolation_forest, local_outlier_factor, robust_covariance or one_class_svm
 marker_mapping: # can be used as CEA: all or CEA: CEA&SCCA. You can comment a marker to disable it
   CEA: ALL
   CYFRA21: ALL
