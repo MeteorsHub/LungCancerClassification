@@ -48,8 +48,8 @@ def train_eval(config, exp_path):
                     feature_index = (feature_index + 1) % len(features)
 
     threshold = config.get('threshold', 'roc_optimal')
-    metrics_names = ['sensitivity', 'specificity', 'f1', 'roc_auc_score']
-    metrics_avg_names = ['f1_avg', 'f1_avg_std', 'roc_auc_score_avg', 'roc_auc_score_avg_std']
+    metrics_names = ['sensitivity', 'specificity', 'roc_auc_score']
+    metrics_avg_names = ['roc_auc_score_avg', 'roc_auc_score_avg_std']
 
     fig, ax = plt.subplots(9, len(dataset.markers), squeeze=False, figsize=(6 * len(dataset.markers), 40))
     metrics_file = open(os.path.join(exp_path, 'metrics.txt'), 'w')
@@ -58,17 +58,21 @@ def train_eval(config, exp_path):
     all_marker_train_metrics = []
     all_marker_test_metrics = []
     for i, marker in enumerate(dataset.markers):
-        # parameter search
-        print('parameter search for marker %s...' % marker)
-        all_x, all_y, cv_index = dataset.get_all_data(marker)
         model = get_model(config)
-        best_model = GridSearchCV(model,
-                                  param_grid=config['model_kwargs'],
-                                  cv=cv_index,
-                                  scoring='roc_auc_ovr')
-        best_model.fit(all_x, all_y)
-        best_params[marker] = best_model.best_params_
-        print('search done')
+        if config.get('parameter_search', True):
+            # parameter search
+            print('parameter search for marker %s...' % marker)
+            all_x, all_y, cv_index = dataset.get_all_data(marker)
+            best_model = GridSearchCV(model,
+                                      param_grid=config['model_kwargs_search'],
+                                      cv=cv_index,
+                                      scoring='roc_auc_ovr')
+            best_model.fit(all_x, all_y)
+            best_params[marker] = best_model.best_params_
+            print('search done')
+        else:
+            best_model = model
+            best_params[marker] = config['model_kwargs']
 
         # run train and test
         train_xs = []
@@ -78,10 +82,11 @@ def train_eval(config, exp_path):
         test_ys = []
         test_ys_score = []
         for fold_i, (train_x, train_y, test_x, test_y) in enumerate(dataset.get_split_data(marker)):
-            model = base.clone(model)
+            if config.get('parameter_search', True):
+                model = base.clone(model)
             model.set_params(**best_params[marker])
-            model.classes_ = dataset.classes
             model.fit(train_x, train_y)
+            # model.classes_ = dataset.classes
             train_xs += train_x
             train_ys += train_y
             test_xs += test_x
@@ -171,7 +176,7 @@ def train_eval(config, exp_path):
         additional_text = []
         for metrics_name in metrics_avg_names:
             additional_text.append('%s: %1.1f' % (metrics_name, train_metrics[metrics_name]))
-        additional_text.append(best_model.best_params_)
+        additional_text.append(best_params[marker])
         plot_table(table_val_list, row_labels, ax=current_ax, additional_text=additional_text)
 
         current_ax = ax[5, i]

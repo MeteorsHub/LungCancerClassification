@@ -1,4 +1,5 @@
 data_root: ./data/version_2
+#data_clean: local_outlier_factor  # isolation_forest, local_outlier_factor, robust_covariance or one_class_svm
 marker_mapping: # can be used as CEA: all or CEA: CEA&SCCA. You can comment a marker to disable it
   CEA: ALL
   CYFRA21: ALL
@@ -13,14 +14,6 @@ marker_mapping: # can be used as CEA: all or CEA: CEA&SCCA. You can comment a ma
   SYN: ALL
   CD56: ALL
   TPA: ALL
-#  CEA: ALL
-#  CYFRA21: ALL
-#  SCCA: ALL
-#  NSE: ALL
-#  GRP: ALL
-#  CA125: ALL
-#  EGFR: ALL
-#  IDH1: ALL
 features:
   #  - Ct1
   #  - Ct2
@@ -31,36 +24,45 @@ features:
   #  - ΔCt 2
   #  - ΔΔCt 1
   #  - ΔΔCt 2
-#  - Fold 1
+  #  - Fold 1
   #  - Fold 2
   - Ave Fold
   - sd
 class_mapping: # You can comment a class to disable it
-  0: 1
-  1: 0
-  2: 0
-  3: 0
-  #  4: 0
-  5: 0
-feature_selection:
-  method: RFE
-  kwargs:
-    n_features_to_select: 8
-
-feature_transformation:
-  method: lmnn
-  kwargs: { }
+  0: 0
+  1: 1
+  2: 2
+  3: 3
+  #  4: 4
+  5: 5
 num_split_fold: 3  # num-fold strategy to split train and eval dataset
-num_repeat_split_fold: 30  # for RepeatedKFold
-split_random_seed: 0.2
+num_repeat_split_fold: 10  # for RepeatedKFold
+split_random_seed: 0.1
 # if None, only use the samples that has all markers. or set the default value.
 default_missing_value: null
 num_samples_in_each_bag: 1  # samples: original sample study. bag: model input with the same class
 
-model: svm
+#model: lfda
+#model_kwargs_search:
+#  metric__n_components: [null, 5, 10]
+#  metric__k: [null]
+#  metric__embedding_type: [weighted, orthonormalized, plain]
+
+#model: lmnn
+#model_kwargs:
+#  random_state: 1
+#model_kwargs_search:
+##  metric__init: [pca, lda, identity, random]
+#  metric__init: [pca, lda]
+#  metric__k: [1, 3]
+#  metric__n_components: [null, 10]
+#  final__n_neighbors: [1, 3, 5]
+#  final__weights: [uniform, distance]
+#  final__metric: [euclidean, manhattan, chebyshev]
+
+model: mmc
 model_kwargs_search:
-  #  kernel: [ linear, poly, rbf, sigmoid ]
-  kernel: [ linear ]
-  C: [ 0.00005, 0.0001, 0.001, 0.01, 0.1, 1, 10 ]
-  class_weight: [ balanced ]
-  probability: [ true ]
+  metric__random_state: [ 1 ]
+
+final_model:
+  model: k_neighbors

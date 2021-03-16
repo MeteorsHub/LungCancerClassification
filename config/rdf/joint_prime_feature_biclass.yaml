@@ -28,9 +28,9 @@ features:
   - Ave Fold
   - sd
 class_mapping: # You can comment a class to disable it
-  0: 0
+  0: 1
   1: 0
-  2: 1
+  2: 0
   3: 0
   #  4: 1
   5: 0
@@ -42,9 +42,8 @@ default_missing_value: null
 
 model: rdf
 model_kwargs:
-  n_estimators: [ 10, 100, 200, 400 ]
+  n_estimators: [ 10, 100, 400 ]
   criterion: [ gini, entropy ]
-  max_depth: [ null, 10, 20 ]
-  min_samples_leaf: [ 1, 0.1 ]
+  max_depth: [ null, 10 ]
   random_state: [ 1 ]
   class_weight: [ balanced ]

@@ -1,5 +1,5 @@
 data_root: ./data/version_2
-#data_clean: local_outlier_factor  # isolation_forest, local_outlier_factor, robust_covariance or one_class_svm
+#data_clean: robust_covariance  # isolation_forest, local_outlier_factor, robust_covariance or one_class_svm
 marker_mapping: # can be used as CEA: all or CEA: CEA&SCCA. You can comment a marker to disable it
   CEA: ALL
   CYFRA21: ALL
@@ -28,13 +28,28 @@ features:
   #  - Fold 2
   - Ave Fold
   - sd
+feature_selection:
+  #  method: select_from_model
+  #  kwargs:
+  #    threshold: null
+  #    max_features: null
+  #  method: select_k_best
+  #  kwargs:
+  #    score_func: mutual_info_classif  # chi2, f_classif or mutual_info_classif
+  #    k: 6
+  method: RFE
+  kwargs:
+    n_features_to_select: 26
+#  method: RFECV
+#  kwargs:
+#    min_features_to_select: 3
 class_mapping: # You can comment a class to disable it
   0: 0
-  1: 1
-  2: 2
-  3: 3
+  1: 0
+  2: 0
+  3: 0
   #  4: 4
-  5: 5
+  5: 1
 num_split_fold: 3  # num-fold strategy to split train and eval dataset
 num_repeat_split_fold: 10  # for RepeatedKFold
 split_random_seed: 0.1
@@ -42,33 +57,29 @@ split_random_seed: 0.1
 default_missing_value: null
 num_samples_in_each_bag: 1  # samples: original sample study. bag: model input with the same class
 
+#threshold: [0.7, 0.3]
+
+parameter_search: false
+
 model: voting
 sub_model:
   - model: svm
     model_name: linear_svm
+    model_kwargs:
+      probability: true
+      C: 0.0008
+      kernel: linear
+      class_weight: balanced
+      random_state: 1
   - model: svm
     model_name: rbf_svm
-#  - model: k_neighbors
-#    model_name: knn
-#  - model: rdf
-#    model_name: rdf
+    model_kwargs:
+      probability: true
+      C: 10
+      kernel: rbf
+      class_weight: balanced
+      random_state: 1
+
 model_kwargs:
-  voting: [ soft ]
-  linear_svm__kernel: [ linear ]
-  linear_svm__C: [ 0.0001, 0.001, 0.01, 0.1 ]
-  linear_svm__class_weight: [ balanced ]
-  linear_svm__probability: [ true ]
-  linear_svm__random_state: [ 1 ]
-  rbf_svm__kernel: [ rbf ]
-  rbf_svm__C: [ 0.1, 1, 10, 30 ]
-  rbf_svm__class_weight: [ balanced ]
-  rbf_svm__probability: [ true ]
-  rbf_svm__random_state: [ 1 ]
-#  knn__n_neighbors: [ 3, 5 ]
-#  knn__weights: [ distance ]
-#  knn__algorithm: [ ball_tree, kd_tree ]
-#  knn__metric: [ euclidean, manhattan ]
-#  rdf__n_estimators: [ 10, 100 ]
-#  rdf__criterion: [ gini, entropy ]
-##  rdf__max_depth: [ 5, 10, 50 ]
-#  rdf__class_weight: [ balanced ]
+  voting: soft
+

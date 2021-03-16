@@ -13,47 +13,35 @@ marker_mapping: # can be used as CEA: all or CEA: CEA&SCCA. You can comment a ma
   SYN: ALL
   CD56: ALL
   TPA: ALL
-#  CEA: ALL
-#  CYFRA21: ALL
-#  SCCA: ALL
-#  NSE: ALL
-#  GRP: ALL
-#  CA125: ALL
-#  EGFR: ALL
-#  IDH1: ALL
 features:
-  #  - Ct1
-  #  - Ct2
-  #  - GAPDH1
-  #  - GAPDH2
-  #  - GAPDHmean
-  #  - ΔCt 1
-  #  - ΔCt 2
-  #  - ΔΔCt 1
-  #  - ΔΔCt 2
-  #  - Fold 1
-  #  - Fold 2
   - Ave Fold
   - sd
 class_mapping: # You can comment a class to disable it
-  0: 1
-  1: 0
-  2: 0
-  3: 0
+  0: 0
+  1: 1
+  2: 2
+  3: 3
   #  4: 0
-  5: 0
-num_split_fold: 3  # num-fold strategy to split train and eval dataset
-num_repeat_split_fold: 30  # for RepeatedKFold
+  5: 5
+num_split_fold: 2  # num-fold strategy to split train and eval dataset
+num_repeat_split_fold: 1  # for RepeatedKFold
 split_random_seed: 0.2
 # if None, only use the samples that has all markers. or set the default value.
 default_missing_value: null
 num_samples_in_each_bag: 1  # samples: original sample study. bag: model input with the same class
 
-model: decision_tree
-model_kwargs:
-  criterion: [ gini, entropy ]
-  splitter: [ best, random ]
-  max_depth: [ 10, 100, null ]
-  random_state: [ 1 ]
-  class_weight: [ balanced ]
 
+#model: k_neighbors
+#model_kwargs:
+#  n_neighbors: 3
+#  weights: uniform
+##  metric: [ euclidean, manhattan, chebyshev ]
+#  metric: euclidean
+
+model: svm
+model_kwargs:
+  C: 100
+  kernel: rbf
+  random_state: 1
+  class_weight: balanced
+  probability: true

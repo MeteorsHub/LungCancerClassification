@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="svm/joint_prime_feature_biclass" type="PythonConfigurationType" factoryName="Python" folderName="svm" singleton="false">
+  <configuration default="false" name="gradient_boost/joint_prime_feature_biclass" type="PythonConfigurationType" factoryName="Python" folderName="gradient_boost">
     <module name="LungCancerClassification" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
@@ -13,7 +13,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/train_eval.py" />
-    <option name="PARAMETERS" value="-c=svm/joint_prime_feature_biclass -s=class0_nca -o -r" />
+    <option name="PARAMETERS" value="-c=gradient_boost/joint_prime_feature_biclass -s=d2_class0 -o -r" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

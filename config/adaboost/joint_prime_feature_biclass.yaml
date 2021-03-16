@@ -15,22 +15,27 @@ marker_mapping:  # can be used as CEA: all or CEA: CEA&SCCA. You can comment a m
   TPA: ALL
 features:
 #  - Ct1
-#  - Ct2
-#  - GAPDH1
-#  - GAPDH2
-#  - GAPDHmean
-#  - ΔCt 1
-#  - ΔCt 2
+  #  - Ct2
+  #  - GAPDH1
+  #  - GAPDH2
+  #  - GAPDHmean
+  #  - ΔCt 1
+  #  - ΔCt 2
   #  - ΔΔCt 1
   #  - ΔΔCt 2
   #  - Fold 1
   #  - Fold 2
   - Ave Fold
-  - sd
+#  - sd
+feature_selection:
+  method: sfs
+  kwargs:
+    n_features_to_select: 10
+    direction: backward
 class_mapping: # You can comment a class to disable it
-  0: 0
+  0: 1
   1: 0
-  2: 1
+  2: 0
   3: 0
   #  4: 1
   5: 0
@@ -40,8 +45,19 @@ split_random_seed: 0.2
 # if None, only use the samples that has all markers. or set the default value.
 default_missing_value: null
 
+parameter_search: false
+
 model: adaboost
+sub_model:
+  model: svm
+  model_kwargs:
+    C: 0.00008
+    class_weight: balanced
+    kernel: linear
+    probability: true
+    random_state: 1
 model_kwargs:
-  n_estimators: [ 100, 500, 1000 ]
-  learning_rate: [ 0.01, 0.1, 1, 10 ]
-  algorithm: [ SAMME, SAMME.R ]
+  n_estimators: 30
+  learning_rate: 0.01
+  algorithm: SAMME.R
+  random_state: 1

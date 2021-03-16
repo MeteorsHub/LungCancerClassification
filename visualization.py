@@ -80,4 +80,4 @@ def plot_table(table_val_list, row_labels, cell_loc='center', table_loc='upper c
             additional_text = [additional_text]
         locations = np.linspace(0.5, 0.1, len(additional_text))
         for add_text, loc in zip(additional_text, locations):
-            ax.text(0, loc, add_text, wrap=True)
+            ax.text(0, loc, add_text, wrap=True, clip_on=True)

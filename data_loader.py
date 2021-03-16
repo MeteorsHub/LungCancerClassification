@@ -2,13 +2,15 @@ import itertools
 import os
 import random
 
+from metric_learn import LFDA, LMNN, MLKR, NCA
 from scipy.special import comb
 from sklearn.covariance import EllipticEnvelope
 from sklearn.ensemble import IsolationForest
-from sklearn.feature_selection import SelectFromModel
+from sklearn.feature_selection import SelectFromModel, SelectKBest, chi2, f_classif, mutual_info_classif, RFE, RFECV, \
+    SequentialFeatureSelector
 from sklearn.model_selection import RepeatedStratifiedKFold
 from sklearn.neighbors import LocalOutlierFactor
-from sklearn.svm import OneClassSVM, LinearSVC
+from sklearn.svm import OneClassSVM, LinearSVC, SVC
 
 from utils import read_dict_csv, unstack
 from visualization import plot_feature_distribution
@@ -22,6 +24,8 @@ class MarkerExpressionDataset:
         self.data_clean = config.get('data_clean', None)
         self.feature_selection = config.get('feature_selection', None)
         self.feature_selector = None
+        self.feature_transformation = config.get('feature_transformation', None)
+        self.feature_transformer = None
         self.num_split_fold_single = int(config['num_split_fold'])
         self.num_split_fold_repeat_times = int(config.get('num_repeat_split_fold', '1'))
         self.num_fold = self.num_split_fold_single * self.num_split_fold_repeat_times
@@ -71,10 +75,44 @@ class MarkerExpressionDataset:
             for marker in self.markers:
                 if self.feature_selection['method'] == 'select_from_model':
                     self.feature_selector[marker] = SelectFromModel(
-                        estimator=LinearSVC(C=0.001, class_weight='balanced', penalty='l1', dual=False),
+                        estimator=LinearSVC(C=0.00005, class_weight='balanced', penalty='l1', dual=False),
                         **self.feature_selection['kwargs'])
+                elif self.feature_selection['method'] == 'select_k_best':
+                    if self.feature_selection['kwargs']['score_func'] == 'chi2':
+                        self.feature_selection['kwargs']['score_func'] = chi2
+                    if self.feature_selection['kwargs']['score_func'] == 'f_classif':
+                        self.feature_selection['kwargs']['score_func'] = f_classif
+                    if self.feature_selection['kwargs']['score_func'] == 'mutual_info_classif':
+                        self.feature_selection['kwargs']['score_func'] = mutual_info_classif
+                    self.feature_selector[marker] = SelectKBest(**self.feature_selection['kwargs'])
+                elif self.feature_selection['method'] == 'RFE':
+                    self.feature_selector[marker] = RFE(
+                        estimator=SVC(C=0.00008, kernel='linear', class_weight='balanced', random_state=1),
+                        **self.feature_selection['kwargs'])
+                elif self.feature_selection['method'] == 'RFECV':
+                    self.feature_selector[marker] = RFECV(
+                        estimator=SVC(C=0.00005, kernel='linear', class_weight='balanced', random_state=1),
+                        **self.feature_selection['kwargs'])
+                elif self.feature_selection['method'] == 'sfs':
+                    self.feature_selector[marker] = SequentialFeatureSelector(
+                        estimator=SVC(C=0.00008, kernel='linear', class_weight='balanced', random_state=1),
+                        **self.feature_selection['kwargs']
+                    )
                 else:
                     raise AttributeError('unrecognized feature selection method: %s' % self.feature_selection['method'])
+        if self.feature_transformation is not None:
+            self.feature_transformer = dict()
+            for marker in self.markers:
+                if self.feature_transformation['method'] == 'lfda':
+                    self.feature_transformer[marker] = LFDA(**self.feature_transformation['kwargs'])
+                elif self.feature_transformation['method'] == 'lmnn':
+                    self.feature_transformer[marker] = LMNN(**self.feature_transformation['kwargs'])
+                elif self.feature_transformation['method'] == 'nca':
+                    self.feature_transformer[marker] = NCA(**self.feature_transformation['kwargs'])
+                elif self.feature_transformation['method'] == 'mlkr':
+                    self.feature_transformer[marker] = MLKR(**self.feature_transformation['kwargs'])
+                else:
+                    raise AttributeError
         assert self.num_samples_in_each_bag > 0
         random.seed(self.random_seed)
         self.load()
@@ -215,8 +253,16 @@ class MarkerExpressionDataset:
         # feature selection
         if self.feature_selector is not None:
             for marker in self.markers:
-                all_xs, all_ys, _ = self.get_all_data(marker, without_transform=True)
+                all_xs, all_ys, _ = self.get_all_data(
+                    marker, feature_selection=False, feature_transformation=False, dup_reduce=True)
                 self.feature_selector[marker].fit(all_xs, all_ys)
+
+        # feature transformation
+        if self.feature_transformation is not None:
+            for marker in self.markers:
+                all_xs, all_ys, _ = self.get_all_data(
+                    marker, feature_selection=True, feature_transformation=False, dup_reduce=True)
+                self.feature_transformer[marker].fit(all_xs, all_ys)
 
     def get_bag_feature_class(self, marker, sample_ids):
         bag_class = None
@@ -230,7 +276,7 @@ class MarkerExpressionDataset:
             bag_feature += item['feature']
         return bag_feature, bag_class
 
-    def get_all_data(self, marker, without_transform=False):
+    def get_all_data(self, marker, feature_selection=True, feature_transformation=True, dup_reduce=False):
         assert marker in self.markers, 'marker %s not in self.markers' % marker
 
         all_bag_feature = []
@@ -238,7 +284,7 @@ class MarkerExpressionDataset:
         index_pointer = 0
         cv_index = []  # [(fold_0_train_indexes, fold_0_test_indexes)...]
 
-        for fold_i in range(self.num_fold):
+        for fold_i in range(1 if dup_reduce else self.num_fold):
             train_bags = self.bag_data_split_fold[marker][fold_i]['train']
             test_bags = self.bag_data_split_fold[marker][fold_i]['test']
             train_indexes = []
@@ -257,8 +303,11 @@ class MarkerExpressionDataset:
                 index_pointer += 1
             cv_index.append((train_indexes, test_indexes))
 
-        if not without_transform and self.feature_selector is not None:
+        if feature_selection and self.feature_selector is not None:
             all_bag_feature = unstack(self.feature_selector[marker].transform(all_bag_feature))
+
+        if feature_transformation and self.feature_transformer is not None:
+            all_bag_feature = unstack(self.feature_transformer[marker].transform(all_bag_feature))
 
         return all_bag_feature, all_bag_class, cv_index
 
@@ -285,6 +334,11 @@ class MarkerExpressionDataset:
             if self.feature_selector is not None:
                 train_feature = unstack(self.feature_selector[marker].transform(train_feature))
                 test_feature = unstack(self.feature_selector[marker].transform(test_feature))
+
+            if self.feature_transformer is not None:
+                train_feature = unstack(self.feature_transformer[marker].transform(train_feature))
+                test_feature = unstack(self.feature_transformer[marker].transform(test_feature))
+
             yield train_feature, train_class, test_feature, test_class
 
     def plot_data_clean_distribution(self, ax, marker):

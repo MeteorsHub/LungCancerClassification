@@ -1,0 +1,128 @@
+data_root: ./data/version_2
+#data_clean: robust_covariance  # isolation_forest, local_outlier_factor, robust_covariance or one_class_svm
+marker_mapping: # can be used as CEA: all or CEA: CEA&SCCA. You can comment a marker to disable it
+  CEA: ALL
+  CYFRA21: ALL
+  SCCA: ALL
+  NSE: ALL
+  ProGRP: ALL
+  CA125: ALL
+  EGFR: ALL
+  IDH1: ALL
+  CGA: ALL
+  TTF1: ALL
+  SYN: ALL
+  CD56: ALL
+  TPA: ALL
+features:
+  #  - Ct1
+  #  - Ct2
+  #  - GAPDH1
+  #  - GAPDH2
+  #  - GAPDHmean
+  #  - ΔCt 1
+  #  - ΔCt 2
+  #  - ΔΔCt 1
+  #  - ΔΔCt 2
+  #  - Fold 1
+  #  - Fold 2
+  - Ave Fold
+  - sd
+#feature_selection:
+#  method: select_from_model
+#  kwargs:
+#    threshold: null
+#    max_features: null
+#  method: select_k_best
+#  kwargs:
+#    score_func: mutual_info_classif  # chi2, f_classif or mutual_info_classif
+#    k: 1
+#  method: RFE
+#  kwargs:
+#    n_features_to_select: 10
+#  method: RFECV
+#  kwargs:
+#    min_features_to_select: 16
+class_mapping: # You can comment a class to disable it
+  0: 1
+  1: 0
+  2: 0
+  3: 0
+  #  4: 4
+  5: 0
+num_split_fold: 3  # num-fold strategy to split train and eval dataset
+num_repeat_split_fold: 10  # for RepeatedKFold
+split_random_seed: 0.1
+# if None, only use the samples that has all markers. or set the default value.
+default_missing_value: null
+num_samples_in_each_bag: 1  # samples: original sample study. bag: model input with the same class
+
+#threshold: [0.7, 0.3]
+parameter_search: false
+
+model: stacking
+sub_model:
+  - model: svm
+    model_name: rbf_svm_1
+    model_kwargs:
+      kernel: rbf
+      C: 10
+      class_weight: balanced
+      probability: true
+      random_state: 1
+  - model: svm
+    model_name: rbf_svm_2
+    model_kwargs:
+      kernel: rbf
+      C: 10
+      class_weight: balanced
+      probability: true
+      random_state: 2
+  - model: svm
+    model_name: rbf_svm_3
+    model_kwargs:
+      kernel: rbf
+      C: 10
+      class_weight: balanced
+      probability: true
+      random_state: 3
+  - model: svm
+    model_name: linear_svm_1
+    model_kwargs:
+      kernel: linear
+      C: 0.00005
+      class_weight: balanced
+      probability: true
+      random_state: 1
+  - model: svm
+    model_name: linear_svm_2
+    model_kwargs:
+      kernel: linear
+      C: 0.00005
+      class_weight: balanced
+      probability: true
+      random_state: 2
+  - model: svm
+    model_name: linear_svm_3
+    model_kwargs:
+      kernel: linear
+      C: 0.00005
+      class_weight: balanced
+      probability: true
+      random_state: 3
+  - model: k_neighbors
+    model_name: knn
+    model_kwargs:
+      n_neighbors: 3
+      weights: distance
+      algorithm: ball_tree
+      metric: manhattan
+final_model:
+  model: adaboost
+  model_kwargs:
+    n_estimators: 50
+    learning_rate: 0.01
+    algorithm: SAMME.R
+model_kwargs:
+  passthrough: false
+  cv: 3
