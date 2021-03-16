@@ -45,7 +45,7 @@ class_mapping: # You can comment a class to disable it
 feature_selection:
   method: RFE
   kwargs:
-    n_features_to_select: 8
+    n_features_to_select: 11
 
 feature_transformation:
   method: lmnn
@@ -58,9 +58,12 @@ default_missing_value: null
 num_samples_in_each_bag: 1  # samples: original sample study. bag: model input with the same class
 
 model: svm
+model_kwargs:
+  probability: true
+  random_state: 1
 model_kwargs_search:
-  #  kernel: [ linear, poly, rbf, sigmoid ]
-  kernel: [ linear ]
+  kernel: [ linear, poly, rbf, sigmoid ]
+  #  kernel: [ linear ]
   C: [ 0.00005, 0.0001, 0.001, 0.01, 0.1, 1, 10 ]
   class_weight: [ balanced ]
-  probability: [ true ]
+

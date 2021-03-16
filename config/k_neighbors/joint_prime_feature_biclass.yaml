@@ -36,12 +36,22 @@ features:
   - Ave Fold
   - sd
 class_mapping: # You can comment a class to disable it
-  0: 0
+  0: 1
   1: 0
-  2: 1
+  2: 0
   3: 0
   #  4: 0
   5: 0
+
+#feature_selection:
+#  method: RFE
+#  kwargs:
+#    n_features_to_select: 11
+##
+#feature_transformation:
+#  method: lmnn
+#  kwargs: { }
+
 num_split_fold: 3  # num-fold strategy to split train and eval dataset
 num_repeat_split_fold: 30  # for RepeatedKFold
 split_random_seed: 0.2
@@ -50,7 +60,7 @@ default_missing_value: null
 num_samples_in_each_bag: 1  # samples: original sample study. bag: model input with the same class
 
 model: k_neighbors
-model_kwargs:
+model_kwargs_search:
   n_neighbors: [ 3, 5, 10, 20 ]
   weights: [ uniform, distance ]
   algorithm: [ ball_tree, kd_tree, brute ]
