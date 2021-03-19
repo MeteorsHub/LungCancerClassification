@@ -52,16 +52,16 @@ def train_eval(config, exp_path):
                 if dataset.fs_metric_params is not None:
                     f.write('---feature selection and transformation kwargs: %s---\n'
                             % str(dataset.fs_metric_params[marker]))
-
-                features = dataset.features
-                feature_index = 0
-                f.write('---selected features---\n')
-                for flag in dataset.feature_selector[marker].get_support():
-                    f.write('%s:\t%s\n' % (features[feature_index], flag))
-                    feature_index = (feature_index + 1) % len(features)
-
-                components = dataset.feature_transformer[marker].components_
-                f.write('---feature transformation components---:\n%s' % components)
+                if dataset.feature_selection is not None:
+                    features = dataset.features
+                    feature_index = 0
+                    f.write('---selected features---\n')
+                    for flag in dataset.feature_selector[marker].get_support():
+                        f.write('%s:\t%s\n' % (features[feature_index], flag))
+                        feature_index = (feature_index + 1) % len(features)
+                if dataset.feature_transformation is not None:
+                    components = dataset.feature_transformer[marker].components_
+                    f.write('---feature transformation components---:\n%s' % components)
 
     threshold = config.get('threshold', 'roc_optimal')
     metrics_names = ['sensitivity', 'specificity', 'roc_auc_score']

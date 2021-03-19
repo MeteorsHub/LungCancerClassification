@@ -28,33 +28,32 @@ features:
   #  - Fold 2
   - Ave Fold
 #  - sd
-feature_selection:
-  #  method: select_from_model
-  #  kwargs:
-  #    threshold: null
-  #    max_features: null
-  #  method: select_k_best
-  #  kwargs:
-  #    score_func: mutual_info_classif  # chi2, f_classif or mutual_info_classif
-  #    k: 6
-  method: RFE
-  kwargs_search:
-    n_features_to_select: [ 1,2,3,4,5,6,7,8,9,10,11,12,13 ]
+#feature_selection:
+#  #  method: select_from_model
+#  #  kwargs:
+#  #    threshold: null
+#  #    max_features: null
+#  #  method: select_k_best
+#  #  kwargs:
+#  #    score_func: mutual_info_classif  # chi2, f_classif or mutual_info_classif
+#  #    k: 6
+#  method: RFE
+#  kwargs_search:
+#    n_features_to_select: [ 1,2,3,4,5,6,7,8,9,10,11,12,13 ]
 #  method: RFECV
 #  kwargs:
 #    min_features_to_select: 3
 
 feature_transformation:
-  method: lmnn
+  method: nca
   kwargs_search:
-    n_components: [ null, 3, 5 ]
     init: [ pca, lda, identity ]
-    k: [ 1, 3, 5 ]
+    n_components: [ null, 3, 5, 8 ]
 
 class_mapping: # You can comment a class to disable it
-  0: 0
+  0: 1
   1: 0
-  2: 1
+  2: 0
   3: 0
   #  4: 4
   5: 0
