@@ -27,7 +27,7 @@ class MarkerExpressionDataset:
         self.feature_selector = None
         self.feature_transformation = config.get('feature_transformation', None)
         self.feature_transformer = None
-        self.feature_transformer_params = None
+        self.fs_metric_params = None
         self.num_split_fold_single = int(config['num_split_fold'])
         self.num_split_fold_repeat_times = int(config.get('num_repeat_split_fold', '1'))
         self.num_fold = self.num_split_fold_single * self.num_split_fold_repeat_times
@@ -75,30 +75,34 @@ class MarkerExpressionDataset:
         if self.feature_selection is not None:
             self.feature_selector = dict()
             for marker in self.markers:
+                if 'kwargs' not in self.feature_selection:
+                    kwargs = dict()
+                else:
+                    kwargs = self.feature_selection['kwargs']
                 if self.feature_selection['method'] == 'select_from_model':
                     self.feature_selector[marker] = SelectFromModel(
                         estimator=LinearSVC(C=0.00005, class_weight='balanced', penalty='l1', dual=False),
-                        **self.feature_selection['kwargs'])
+                        **kwargs)
                 elif self.feature_selection['method'] == 'select_k_best':
-                    if self.feature_selection['kwargs']['score_func'] == 'chi2':
-                        self.feature_selection['kwargs']['score_func'] = chi2
-                    if self.feature_selection['kwargs']['score_func'] == 'f_classif':
-                        self.feature_selection['kwargs']['score_func'] = f_classif
-                    if self.feature_selection['kwargs']['score_func'] == 'mutual_info_classif':
-                        self.feature_selection['kwargs']['score_func'] = mutual_info_classif
-                    self.feature_selector[marker] = SelectKBest(**self.feature_selection['kwargs'])
+                    if kwargs['score_func'] == 'chi2':
+                        kwargs['score_func'] = chi2
+                    if kwargs['score_func'] == 'f_classif':
+                        kwargs['score_func'] = f_classif
+                    if kwargs['score_func'] == 'mutual_info_classif':
+                        kwargs['score_func'] = mutual_info_classif
+                    self.feature_selector[marker] = SelectKBest(**kwargs)
                 elif self.feature_selection['method'] == 'RFE':
                     self.feature_selector[marker] = RFE(
                         estimator=SVC(C=0.00008, kernel='linear', class_weight='balanced', random_state=1),
-                        **self.feature_selection['kwargs'])
+                        **kwargs)
                 elif self.feature_selection['method'] == 'RFECV':
                     self.feature_selector[marker] = RFECV(
                         estimator=SVC(C=0.00005, kernel='linear', class_weight='balanced', random_state=1),
-                        **self.feature_selection['kwargs'])
+                        **kwargs)
                 elif self.feature_selection['method'] == 'sfs':
                     self.feature_selector[marker] = SequentialFeatureSelector(
                         estimator=SVC(C=0.00008, kernel='linear', class_weight='balanced', random_state=1),
-                        **self.feature_selection['kwargs']
+                        **kwargs
                     )
                 else:
                     raise AttributeError('unrecognized feature selection method: %s' % self.feature_selection['method'])
@@ -257,38 +261,49 @@ class MarkerExpressionDataset:
                 random.shuffle(fold_test_bags)
                 self.bag_data_split_fold[marker].append({'train': fold_train_bags, 'test': fold_test_bags})
 
-        # feature selection
-        if self.feature_selector is not None:
-            for marker in self.markers:
-                all_xs, all_ys, _ = self.get_all_data(
-                    marker, feature_selection=False, feature_transformation=False, dup_reduce=True)
-                self.feature_selector[marker].fit(all_xs, all_ys)
+        # feature selection and transformation
+        for marker in self.markers:
+            pipeline = []
+            kwargs_search = dict()
+            if self.feature_selector is not None:
+                if 'kwargs_search' in self.feature_selection:
+                    for key, value in self.feature_selection['kwargs_search'].items():
+                        kwargs_search['fs__' + key] = value
+                    pipeline.append(('fs', self.feature_selector[marker]))
+                else:
+                    all_xs, all_ys, _ = self.get_all_data(
+                        marker, feature_selection=False, feature_transformation=False, dup_reduce=True)
+                    self.feature_selector[marker].fit(all_xs, all_ys)
 
-        # feature transformation
-        if self.feature_transformation is not None:
-            self.feature_transformer_params = dict()
-            for marker in self.markers:
-                all_xs, all_ys, _ = self.get_all_data(
-                    marker, feature_selection=True, feature_transformation=False, dup_reduce=True)
+            if self.feature_transformation is not None:
+                self.fs_metric_params = dict()
                 if 'kwargs_search' in self.feature_transformation:
-                    print('begin to search best params for metric learning')
-                    classifier = SVC(C=1e-4, kernel='linear', probability=True, random_state=1, class_weight='balanced')
-                    search_pipeline = Pipeline([('metric', self.feature_transformer[marker]),
-                                                ('classifier', classifier)])
-                    kwargs_search = dict()
                     for key, value in self.feature_transformation['kwargs_search'].items():
                         kwargs_search['metric__' + key] = value
-                    search_model = GridSearchCV(
-                        search_pipeline,
-                        kwargs_search,
-                        scoring='roc_auc_ovr',
-                        cv=3)
-                    search_model.fit(all_xs, all_ys)
-                    self.feature_transformer[marker] = search_model.best_estimator_.named_steps['metric']
-                    self.feature_transformer_params[marker] = search_model.best_params_
-                    print('metric learning search done')
+                    pipeline.append(('metric', self.feature_transformer[marker]))
                 else:
+                    all_xs, all_ys, _ = self.get_all_data(
+                        marker, feature_selection=True, feature_transformation=False, dup_reduce=True)
                     self.feature_transformer[marker].fit(all_xs, all_ys)
+
+            if len(pipeline) > 0:
+                print('begin to search best params for feature selection and metric learning')
+                classifier = SVC(C=8e-5, kernel='linear', probability=True, random_state=1, class_weight='balanced')
+                pipeline.append(('classifier', classifier))
+                pipeline = Pipeline(pipeline)
+
+                search_model = GridSearchCV(
+                    pipeline,
+                    kwargs_search,
+                    scoring='roc_auc_ovr',
+                    cv=3)
+                all_xs, all_ys, _ = self.get_all_data(
+                    marker, feature_selection=False, feature_transformation=False, dup_reduce=True)
+                search_model.fit(all_xs, all_ys)
+                self.feature_selector[marker] = search_model.best_estimator_.named_steps['fs']
+                self.feature_transformer[marker] = search_model.best_estimator_.named_steps['metric']
+                self.fs_metric_params[marker] = search_model.best_params_
+                print('feature selection and metric learning search done')
 
     def get_bag_feature_class(self, marker, sample_ids):
         bag_class = None

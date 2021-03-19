@@ -35,27 +35,33 @@ def train_eval(config, exp_path):
                     for sample_id in item.keys():
                         if item[sample_id]['class'] == class_id:
                             f.write('\t%s\n' % sample_id)
-    if dataset.feature_selection is not None:
-        with open(os.path.join(exp_path, 'feature_selection.txt'), 'w') as f:
-            f.write('---feature selection method: %s---\n' % dataset.feature_selection['method'])
-            f.write('---feature selection kwargs: %s---\n' % str(dataset.feature_selection['kwargs']))
+
+    if dataset.feature_selection is not None or dataset.feature_transformation is not None:
+        with open(os.path.join(exp_path, 'feature_selection_and_transformation.txt'), 'w') as f:
+            if dataset.feature_selection is not None:
+                f.write('---feature selection method: %s---\n' % dataset.feature_selection['method'])
+                if 'kwargs' in dataset.feature_selection:
+                    f.write('---feature selection kwargs: %s---\n' % str(dataset.feature_selection['kwargs']))
+            if dataset.feature_transformation is not None:
+                f.write('---feature transformation method: %s---\n' % dataset.feature_transformation['method'])
+                if 'kwargs' in dataset.feature_transformation:
+                    f.write('---feature transformation kwargs: %s---\n' % str(dataset.feature_transformation['kwargs']))
+
             for marker in dataset.markers:
                 f.write('marker %s:\n' % marker)
+                if dataset.fs_metric_params is not None:
+                    f.write('---feature selection and transformation kwargs: %s---\n'
+                            % str(dataset.fs_metric_params[marker]))
+
                 features = dataset.features
                 feature_index = 0
+                f.write('---selected features---\n')
                 for flag in dataset.feature_selector[marker].get_support():
                     f.write('%s:\t%s\n' % (features[feature_index], flag))
                     feature_index = (feature_index + 1) % len(features)
 
-    if dataset.feature_transformation is not None:
-        with open(os.path.join(exp_path, 'feature_transformation.txt'), 'w') as f:
-            f.write('---feature transformation method: %s---\n' % dataset.feature_transformation['method'])
-            for marker in dataset.markers:
-                f.write('marker %s:\n' % marker)
-                f.write(
-                    '---feature transformation kwargs: %s---\n' % str(dataset.feature_transformer_params[marker]))
                 components = dataset.feature_transformer[marker].components_
-                f.write('---components---:\n%s' % components)
+                f.write('---feature transformation components---:\n%s' % components)
 
     threshold = config.get('threshold', 'roc_optimal')
     metrics_names = ['sensitivity', 'specificity', 'roc_auc_score']

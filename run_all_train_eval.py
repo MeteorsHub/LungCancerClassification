@@ -1,10 +1,9 @@
 import os
 
-models = ['adaboost', 'bayes', 'rdf', 'svm']
-marker_mode = ['joint', 'separate']
-feature_mode = ['all_feature', 'prime_feature']
-class_mode = ['biclass', 'multiclass']
-
+models = ['voting']
+marker_mode = ['joint']
+feature_mode = ['prime_feature']
+class_mode = ['biclass']
 
 if __name__ == '__main__':
     for model in models:
