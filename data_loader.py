@@ -8,8 +8,9 @@ from sklearn.covariance import EllipticEnvelope
 from sklearn.ensemble import IsolationForest
 from sklearn.feature_selection import SelectFromModel, SelectKBest, chi2, f_classif, mutual_info_classif, RFE, RFECV, \
     SequentialFeatureSelector
-from sklearn.model_selection import RepeatedStratifiedKFold
+from sklearn.model_selection import RepeatedStratifiedKFold, GridSearchCV
 from sklearn.neighbors import LocalOutlierFactor
+from sklearn.pipeline import Pipeline
 from sklearn.svm import OneClassSVM, LinearSVC, SVC
 
 from utils import read_dict_csv, unstack
@@ -26,6 +27,7 @@ class MarkerExpressionDataset:
         self.feature_selector = None
         self.feature_transformation = config.get('feature_transformation', None)
         self.feature_transformer = None
+        self.feature_transformer_params = None
         self.num_split_fold_single = int(config['num_split_fold'])
         self.num_split_fold_repeat_times = int(config.get('num_repeat_split_fold', '1'))
         self.num_fold = self.num_split_fold_single * self.num_split_fold_repeat_times
@@ -102,15 +104,20 @@ class MarkerExpressionDataset:
                     raise AttributeError('unrecognized feature selection method: %s' % self.feature_selection['method'])
         if self.feature_transformation is not None:
             self.feature_transformer = dict()
+            self.feature_transformer_searcher = dict()
             for marker in self.markers:
+                if 'kwargs' not in self.feature_transformation:
+                    kwargs = dict()
+                else:
+                    kwargs = self.feature_transformation['kwargs']
                 if self.feature_transformation['method'] == 'lfda':
-                    self.feature_transformer[marker] = LFDA(**self.feature_transformation['kwargs'])
+                    self.feature_transformer[marker] = LFDA(**kwargs)
                 elif self.feature_transformation['method'] == 'lmnn':
-                    self.feature_transformer[marker] = LMNN(**self.feature_transformation['kwargs'])
+                    self.feature_transformer[marker] = LMNN(**kwargs)
                 elif self.feature_transformation['method'] == 'nca':
-                    self.feature_transformer[marker] = NCA(**self.feature_transformation['kwargs'])
+                    self.feature_transformer[marker] = NCA(**kwargs)
                 elif self.feature_transformation['method'] == 'mlkr':
-                    self.feature_transformer[marker] = MLKR(**self.feature_transformation['kwargs'])
+                    self.feature_transformer[marker] = MLKR(**kwargs)
                 else:
                     raise AttributeError
         assert self.num_samples_in_each_bag > 0
@@ -259,10 +266,29 @@ class MarkerExpressionDataset:
 
         # feature transformation
         if self.feature_transformation is not None:
+            self.feature_transformer_params = dict()
             for marker in self.markers:
                 all_xs, all_ys, _ = self.get_all_data(
                     marker, feature_selection=True, feature_transformation=False, dup_reduce=True)
-                self.feature_transformer[marker].fit(all_xs, all_ys)
+                if 'kwargs_search' in self.feature_transformation:
+                    print('begin to search best params for metric learning')
+                    classifier = SVC(C=1e-4, kernel='linear', probability=True, random_state=1, class_weight='balanced')
+                    search_pipeline = Pipeline([('metric', self.feature_transformer[marker]),
+                                                ('classifier', classifier)])
+                    kwargs_search = dict()
+                    for key, value in self.feature_transformation['kwargs_search'].items():
+                        kwargs_search['metric__' + key] = value
+                    search_model = GridSearchCV(
+                        search_pipeline,
+                        kwargs_search,
+                        scoring='roc_auc_ovr',
+                        cv=3)
+                    search_model.fit(all_xs, all_ys)
+                    self.feature_transformer[marker] = search_model.best_estimator_.named_steps['metric']
+                    self.feature_transformer_params[marker] = search_model.best_params_
+                    print('metric learning search done')
+                else:
+                    self.feature_transformer[marker].fit(all_xs, all_ys)
 
     def get_bag_feature_class(self, marker, sample_ids):
         bag_class = None

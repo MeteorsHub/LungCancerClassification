@@ -47,6 +47,16 @@ def train_eval(config, exp_path):
                     f.write('%s:\t%s\n' % (features[feature_index], flag))
                     feature_index = (feature_index + 1) % len(features)
 
+    if dataset.feature_transformation is not None:
+        with open(os.path.join(exp_path, 'feature_transformation.txt'), 'w') as f:
+            f.write('---feature transformation method: %s---\n' % dataset.feature_transformation['method'])
+            for marker in dataset.markers:
+                f.write('marker %s:\n' % marker)
+                f.write(
+                    '---feature transformation kwargs: %s---\n' % str(dataset.feature_transformer_params[marker]))
+                components = dataset.feature_transformer[marker].components_
+                f.write('---components---:\n%s' % components)
+
     threshold = config.get('threshold', 'roc_optimal')
     metrics_names = ['sensitivity', 'specificity', 'roc_auc_score']
     metrics_avg_names = ['roc_auc_score_avg', 'roc_auc_score_avg_std']
