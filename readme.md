@@ -59,27 +59,32 @@ python train_eval.py \
     -c archive/v_1/biclass_0 \
     -s fs_ft_svm
     ```
+   特征选择步骤使用的特征为：SCCA、CGA的fold，CA125、EGFR、CD56、TPA的fold+sd，TTF1的sd
 1. 腺癌（86.2，80.7）
     ```shell
     python train_eval.py \
     -c archive/v_1/biclass_1 \
     -s fs_ft_svm
     ```
+   特征选择步骤使用的特征为：CEA、CA125、CGA的fold，NSE、TTF1的sd，其余特征的fold+sd
 2. 鳞癌（86.9，83.8）
     ```shell
     python train_eval.py \
     -c archive/v_1/biclass_2 \
     -s fs_ft_svm
     ```
+   特征选择步骤使用的特征为：CEA、CYFRA21、IDH1、CGA、TTF1、CD56的fold，CA125的sd
 3. 小细胞癌（99.7，98.9）
     ```shell
     python train_eval.py \
     -c archive/v_1/biclass_3 \
     -s fs_ft_svm
     ```
+   特征选择步骤使用的特征为：CEA、SCCA、NSE的fold，其余特征的fold+sd
 5. 转移癌（97.4，93.2）
     ```shell
     python train_eval.py \
     -c archive/v_1/biclass_5 \
     -s fs_ft_svm
     ```
+   特征选择步骤使用的特征为：CYFRA21的fold，其余特征的fold+sd

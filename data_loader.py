@@ -279,24 +279,16 @@ class MarkerExpressionDataset:
             pipeline = []
             kwargs_search = dict()
             if self.feature_selection is not None:
+                pipeline.append(('fs', self.feature_selector[marker]))
                 if 'kwargs_search' in self.feature_selection:
                     for key, value in self.feature_selection['kwargs_search'].items():
                         kwargs_search['fs__' + key] = value
-                    pipeline.append(('fs', self.feature_selector[marker]))
-                else:
-                    all_xs, all_ys, _ = self.get_all_data(
-                        marker, feature_selection=False, feature_transformation=False, dup_reduce=True)
-                    self.feature_selector[marker].fit(all_xs, all_ys)
 
             if self.feature_transformation is not None:
+                pipeline.append(('metric', self.feature_transformer[marker]))
                 if 'kwargs_search' in self.feature_transformation:
                     for key, value in self.feature_transformation['kwargs_search'].items():
                         kwargs_search['metric__' + key] = value
-                    pipeline.append(('metric', self.feature_transformer[marker]))
-                else:
-                    all_xs, all_ys, _ = self.get_all_data(
-                        marker, feature_selection=True, feature_transformation=False, dup_reduce=True)
-                    self.feature_transformer[marker].fit(all_xs, all_ys)
 
             if len(pipeline) > 0:
                 print('begin to search best params for feature selection and metric learning')
