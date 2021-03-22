@@ -2,6 +2,7 @@ import itertools
 import os
 import random
 
+import numpy as np
 from metric_learn import LFDA, LMNN, MLKR, NCA
 from scipy.special import comb
 from sklearn.covariance import EllipticEnvelope
@@ -11,6 +12,7 @@ from sklearn.feature_selection import SelectFromModel, SelectKBest, chi2, f_clas
 from sklearn.model_selection import RepeatedStratifiedKFold, GridSearchCV
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import FunctionTransformer
 from sklearn.svm import OneClassSVM, LinearSVC, SVC
 
 from utils import read_dict_csv, unstack, get_model
@@ -81,7 +83,20 @@ class MarkerExpressionDataset:
                 else:
                     kwargs = self.feature_selection['kwargs']
                 classifier = SVC(C=0.00008, kernel='linear', class_weight='balanced', random_state=1, probability=True)
-                if self.feature_selection['method'] == 'select_from_model':
+                if self.feature_selection['method'] == 'custom':
+                    def _feat_select(_x, _selection_list=None):
+                        if _selection_list is None:
+                            return _x
+                        _x = np.array(_x)
+                        assert len(_x[0]) == len(_selection_list)
+                        _mask = np.array(_selection_list)
+                        _y = _x[:, _mask]
+                        return _y
+
+                    assert marker in self.feature_selection['selection']
+                    self.feature_selector[marker] = FunctionTransformer(
+                        _feat_select, kw_args={'_selection_list': self.feature_selection['selection'][marker]})
+                elif self.feature_selection['method'] == 'select_from_model':
                     self.feature_selector[marker] = SelectFromModel(
                         estimator=LinearSVC(C=0.00005, class_weight='balanced', penalty='l1', dual=False),
                         **kwargs)
@@ -263,7 +278,7 @@ class MarkerExpressionDataset:
         for marker in self.markers:
             pipeline = []
             kwargs_search = dict()
-            if self.feature_selector is not None:
+            if self.feature_selection is not None:
                 if 'kwargs_search' in self.feature_selection:
                     for key, value in self.feature_selection['kwargs_search'].items():
                         kwargs_search['fs__' + key] = value
@@ -302,9 +317,9 @@ class MarkerExpressionDataset:
                 all_xs, all_ys, _ = self.get_all_data(
                     marker, feature_selection=False, feature_transformation=False, dup_reduce=True)
                 search_model.fit(all_xs, all_ys)
-                if self.feature_selection is not None:
+                if self.feature_selection is not None and 'kwargs_search' in self.feature_selection:
                     self.feature_selector[marker] = search_model.best_estimator_.named_steps['fs']
-                if self.feature_transformation is not None:
+                if self.feature_transformation is not None and 'kwargs_search' in self.feature_transformation:
                     self.feature_transformer[marker] = search_model.best_estimator_.named_steps['metric']
                 self.fs_metric_params[marker] = search_model.best_params_
                 print('feature selection and metric learning search done')
