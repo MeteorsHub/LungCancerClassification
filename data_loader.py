@@ -13,12 +13,13 @@ from sklearn.neighbors import LocalOutlierFactor
 from sklearn.pipeline import Pipeline
 from sklearn.svm import OneClassSVM, LinearSVC, SVC
 
-from utils import read_dict_csv, unstack
+from utils import read_dict_csv, unstack, get_model
 from visualization import plot_feature_distribution
 
 
 class MarkerExpressionDataset:
     def __init__(self, config):
+        self.config = config
         self.data_root = config['data_root']
         self.marker_mapping = config['marker_mapping']
         self.features = config['features']
@@ -286,7 +287,10 @@ class MarkerExpressionDataset:
                 print('begin to search best params for feature selection and metric learning')
                 self.fs_metric_params = dict()
                 if self.feature_transformation is not None:
-                    classifier = SVC(C=8e-5, kernel='linear', probability=True, random_state=1, class_weight='balanced')
+                    classifier = get_model(self.config)
+                    if 'model_kwargs_search' in self.config:
+                        for key, value in self.config['model_kwargs_search'].items():
+                            kwargs_search['classifier__' + key] = value
                     pipeline.append(('classifier', classifier))
                 pipeline = Pipeline(pipeline)
 

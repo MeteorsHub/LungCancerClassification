@@ -34,25 +34,30 @@ features:
 #  - Fold 1
   #  - Fold 2
   - Ave Fold
-#  - sd
+  - sd
 class_mapping: # You can comment a class to disable it
-  0: 1
+  0: 0
   1: 0
   2: 0
   3: 0
   #  4: 0
-  5: 0
-feature_selection:
-  method: RFE
-  kwargs_search:
-    n_features_to_select: [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 ]
+  5: 1
+#feature_selection:
+#  method: RFE
+#  kwargs_search:
+#    n_features_to_select: [26]
+#    n_features_to_select: [ 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25 ]
+#    n_features_to_select: [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 ]
 
 feature_transformation:
   method: lmnn
   kwargs_search:
-    n_components: [ null, 3, 5 ]
-    init: [ pca, lda, identity ]
-    k: [ 1, 3, 5 ]
+    #    n_components: [ 3 ]
+    n_components: [ null, 3, 5, 8, 15 ]
+    init: [ pca ]
+    #    init: [ pca, identity ]
+    k: [ 5 ]
+#    k: [ 1, 3, 5 ]
 num_split_fold: 3  # num-fold strategy to split train and eval dataset
 num_repeat_split_fold: 30  # for RepeatedKFold
 split_random_seed: 0.2
@@ -64,9 +69,9 @@ model: svm
 model_kwargs:
   probability: true
   random_state: 1
+  class_weight: balanced
 model_kwargs_search:
-  kernel: [ linear, poly, rbf, sigmoid ]
+  kernel: [ linear, rbf ]
   #  kernel: [ linear ]
-  C: [ 0.00005, 0.0001, 0.001, 0.01, 0.1, 1, 10 ]
-  class_weight: [ balanced ]
+  C: [ 0.00005, 0.01, 1, 10 ]
 
