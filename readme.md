@@ -33,8 +33,8 @@ python3环境，可以根据运行时import包失败说明，使用pip或conda�
 # -r参数表示重新训练模型，删除该参数可以在/exp文件夹中已有模型存储时报错，防止误删模型
 python train_eval.py \
 -c voting/joint_prime_feature_biclass \
--s 2svm_class0_fs_metric
--o
+-s 2svm_class0_fs_metric \
+-o \
 -r
 ```
 
@@ -49,3 +49,37 @@ python train_eval.py \
 * `feature_selection_and_transformation.txt`：存储特征选择和特征变换的一些结果
 * `metrics.txt`：整体的实验指标
 
+## 最佳实验设置
+
+目前的v1版本里，二分类实验的最佳结果所用的实验设置放在/config/archive/v1里，使用了特征选择、特征转换和svm分类器。 括号里为训练和测试auc
+
+0. 正常（87.4，81.1）
+    ```shell
+    python train_eval.py \
+    -c archive/v_1/biclass_0 \
+    -s fs_ft_svm
+    ```
+1. 腺癌（86.2，80.7）
+    ```shell
+    python train_eval.py \
+    -c archive/v_1/biclass_1 \
+    -s fs_ft_svm
+    ```
+2. 鳞癌（86.9，83.8）
+    ```shell
+    python train_eval.py \
+    -c archive/v_1/biclass_2 \
+    -s fs_ft_svm
+    ```
+3. 小细胞癌（99.7，98.9）
+    ```shell
+    python train_eval.py \
+    -c archive/v_1/biclass_3 \
+    -s fs_ft_svm
+    ```
+5. 转移癌（97.4，93.2）
+    ```shell
+    python train_eval.py \
+    -c archive/v_1/biclass_5 \
+    -s fs_ft_svm
+    ```
