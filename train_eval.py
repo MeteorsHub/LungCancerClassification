@@ -56,7 +56,11 @@ def train_eval(config, exp_path):
                     features = dataset.features
                     feature_index = 0
                     f.write('---selected features---\n')
-                    for flag in dataset.feature_selector[marker].get_support():
+                    if dataset.feature_selection['method'] == 'custom':
+                        support_flags = dataset.feature_selection['selection'][marker]
+                    else:
+                        support_flags = dataset.feature_selector[marker].get_support()
+                    for flag in support_flags:
                         f.write('%s:\t%s\n' % (features[feature_index], flag))
                         feature_index = (feature_index + 1) % len(features)
                 if dataset.feature_transformation is not None:
