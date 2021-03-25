@@ -3,7 +3,7 @@ import os
 import random
 
 import numpy as np
-from metric_learn import LFDA, LMNN, MLKR, NCA
+from metric_learn import LFDA, LMNN, MLKR, NCA, MMC_Supervised, RCA_Supervised
 from scipy.special import comb
 from sklearn.covariance import EllipticEnvelope
 from sklearn.ensemble import IsolationForest
@@ -135,6 +135,10 @@ class MarkerExpressionDataset:
                     self.feature_transformer[marker] = NCA(**kwargs)
                 elif self.feature_transformation['method'] == 'mlkr':
                     self.feature_transformer[marker] = MLKR(**kwargs)
+                elif self.feature_transformation['method'] == 'mmc':
+                    self.feature_transformer[marker] = MMC_Supervised(**kwargs)
+                elif self.feature_transformation['method'] == 'rca':
+                    self.feature_transformer[marker] = RCA_Supervised(**kwargs)
                 else:
                     raise AttributeError
         assert self.num_samples_in_each_bag > 0
@@ -289,16 +293,15 @@ class MarkerExpressionDataset:
                 if 'kwargs_search' in self.feature_transformation:
                     for key, value in self.feature_transformation['kwargs_search'].items():
                         kwargs_search['metric__' + key] = value
+                classifier = get_model(self.config)
+                if 'model_kwargs_search' in self.config:
+                    for key, value in self.config['model_kwargs_search'].items():
+                        kwargs_search['classifier__' + key] = value
+                pipeline.append(('classifier', classifier))
 
             if len(pipeline) > 0:
                 print('begin to search best params for feature selection and metric learning')
                 self.fs_metric_params = dict()
-                if self.feature_transformation is not None:
-                    classifier = get_model(self.config)
-                    if 'model_kwargs_search' in self.config:
-                        for key, value in self.config['model_kwargs_search'].items():
-                            kwargs_search['classifier__' + key] = value
-                    pipeline.append(('classifier', classifier))
                 pipeline = Pipeline(pipeline)
 
                 search_model = GridSearchCV(
