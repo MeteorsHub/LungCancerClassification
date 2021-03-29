@@ -59,9 +59,9 @@ sub_model:
   - model: svm
     model_name: rbf_svm
   #  - model: k_neighbors
-  #    model_name: knn
-  - model: rdf
-    model_name: rdf
+#  #    model_name: knn
+#  - model: rdf
+#    model_name: rdf
 model_kwargs_search:
   voting: [ soft ]
   linear_svm__kernel: [ linear ]
@@ -77,8 +77,8 @@ model_kwargs_search:
   #  knn__n_neighbors: [ 3, 5 ]
   #  knn__weights: [ distance ]
   #  knn__algorithm: [ ball_tree, kd_tree ]
-  #  knn__metric: [ euclidean, manhattan ]
-  rdf__n_estimators: [ 10, 100 ]
-  rdf__criterion: [ gini, entropy ]
-  #  rdf__max_depth: [ 5, 10, 50 ]
-  rdf__class_weight: [ balanced ]
+#  #  knn__metric: [ euclidean, manhattan ]
+#  rdf__n_estimators: [ 10, 100 ]
+#  rdf__criterion: [ gini, entropy ]
+#  #  rdf__max_depth: [ 5, 10, 50 ]
+#  rdf__class_weight: [ balanced ]
