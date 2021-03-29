@@ -51,6 +51,26 @@ python train_eval.py \
 
 ## 最佳实验设置
 
+### v3
+
+将最后的分类器由svm改为voting svm，就是线性核svm和高斯核svm软投票。训练集平均auc有一些上涨，测试集平均auc也稍微涨了一点
+
+```shell
+    python train_eval.py \
+    -c archive/v_3/multiclass \
+    -s ft_svm_voting
+ ```
+
+auc结果：
+
+0. 正常（96.0，88.9）
+1. 腺癌（91.7，84.2）
+2. 鳞癌（93.9，87.8）
+3. 小细胞癌（100，99.8）
+4. 转移癌（96.0，89.5）
+
+![](/artworks/v3_roc.jpg)
+
 ### v2
 
 特征变换矩阵的初始值产生方法由pca变为lda后，前三个类别的AUC有了显著提高，转移癌效果有所下降。但是lda只在多分类问题上效果较好，因此，模型由二分类改为多分类。

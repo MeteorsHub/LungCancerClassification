@@ -1,0 +1,71 @@
+data_root: ./data/version_2
+marker_mapping:
+  CEA: ALL
+  CYFRA21: ALL
+  SCCA: ALL
+  NSE: ALL
+  ProGRP: ALL
+  CA125: ALL
+  EGFR: ALL
+  IDH1: ALL
+  CGA: ALL
+  TTF1: ALL
+  SYN: ALL
+  CD56: ALL
+  TPA: ALL
+features:
+  - Ave Fold
+  - sd
+feature_transformation:
+  method: lmnn
+  kwargs_search:
+    n_components:
+      - 4
+    init:
+      - lda
+    k:
+      - 3
+class_mapping:
+  0: 0
+  1: 1
+  2: 2
+  3: 3
+  5: 5
+num_split_fold: 3
+num_repeat_split_fold: 10
+split_random_seed: 0.1
+default_missing_value: null
+num_samples_in_each_bag: 1
+model: voting
+sub_model:
+  - model: svm
+    model_name: linear_svm
+  - model: svm
+    model_name: rbf_svm
+model_kwargs_search:
+  voting:
+    - soft
+  linear_svm__kernel:
+    - linear
+  linear_svm__C:
+    - 0.001
+    - 0.1
+    - 1.0
+  linear_svm__class_weight:
+    - balanced
+  linear_svm__probability:
+    - true
+  linear_svm__random_state:
+    - 1
+  rbf_svm__kernel:
+    - rbf
+  rbf_svm__C:
+    - 0.1
+    - 1
+    - 10
+  rbf_svm__class_weight:
+    - balanced
+  rbf_svm__probability:
+    - true
+  rbf_svm__random_state:
+    - 1
