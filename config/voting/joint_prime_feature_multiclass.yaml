@@ -28,6 +28,16 @@ features:
   #  - Fold 2
   - Ave Fold
   - sd
+
+feature_transformation:
+  method: lmnn
+  kwargs_search:
+    #    n_components: [ null, 3, 5 ]
+    n_components: [ 4 ]
+    #    init: [ pca, lda, identity ]
+    init: [ lda ]
+    k: [ 3 ]
+
 class_mapping: # You can comment a class to disable it
   0: 0
   1: 1
@@ -48,27 +58,27 @@ sub_model:
     model_name: linear_svm
   - model: svm
     model_name: rbf_svm
-#  - model: k_neighbors
-#    model_name: knn
-#  - model: rdf
-#    model_name: rdf
-model_kwargs:
+  #  - model: k_neighbors
+  #    model_name: knn
+  - model: rdf
+    model_name: rdf
+model_kwargs_search:
   voting: [ soft ]
   linear_svm__kernel: [ linear ]
-  linear_svm__C: [ 0.0001, 0.001, 0.01, 0.1 ]
+  linear_svm__C: [ 0.001, 0.1, 1.0 ]
   linear_svm__class_weight: [ balanced ]
   linear_svm__probability: [ true ]
   linear_svm__random_state: [ 1 ]
   rbf_svm__kernel: [ rbf ]
-  rbf_svm__C: [ 0.1, 1, 10, 30 ]
+  rbf_svm__C: [ 0.1, 1, 10 ]
   rbf_svm__class_weight: [ balanced ]
   rbf_svm__probability: [ true ]
   rbf_svm__random_state: [ 1 ]
-#  knn__n_neighbors: [ 3, 5 ]
-#  knn__weights: [ distance ]
-#  knn__algorithm: [ ball_tree, kd_tree ]
-#  knn__metric: [ euclidean, manhattan ]
-#  rdf__n_estimators: [ 10, 100 ]
-#  rdf__criterion: [ gini, entropy ]
-##  rdf__max_depth: [ 5, 10, 50 ]
-#  rdf__class_weight: [ balanced ]
+  #  knn__n_neighbors: [ 3, 5 ]
+  #  knn__weights: [ distance ]
+  #  knn__algorithm: [ ball_tree, kd_tree ]
+  #  knn__metric: [ euclidean, manhattan ]
+  rdf__n_estimators: [ 10, 100 ]
+  rdf__criterion: [ gini, entropy ]
+  #  rdf__max_depth: [ 5, 10, 50 ]
+  rdf__class_weight: [ balanced ]
