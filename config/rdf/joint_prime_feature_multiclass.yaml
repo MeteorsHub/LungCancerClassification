@@ -1,44 +1,55 @@
-data_root: ./data
-marker_mapping:  # can be used as CEA: all or CEA: CEA&SCCA. You can comment a marker to disable it
+data_root: ./data/version_3
+#data_clean: local_outlier_factor  # isolation_forest, local_outlier_factor, robust_covariance or one_class_svm
+marker_mapping: # can be used as CEA: all or CEA: CEA&SCCA. You can comment a marker to disable it
   CEA: ALL
   CYFRA21: ALL
   SCCA: ALL
   NSE: ALL
-  GRP: ALL
+  ProGRP: ALL
   CA125: ALL
   EGFR: ALL
   IDH1: ALL
+  #  CGA: ALL
+  TTF1: ALL
+  SYN: ALL
+  CD56: ALL
+#  TPA: ALL
 features:
-#  - Ct1
-#  - Ct2
-#  - GAPDH1
-#  - GAPDH2
-#  - GAPDHmean
-#  - ΔCt 1
-#  - ΔCt 2
-#  - ΔΔCt 1
-#  - ΔΔCt 2
+  #  - Ct1
+  #  - Ct2
+  #  - GAPDH1
+  #  - GAPDH2
+  #  - GAPDHmean
+  #  - ΔCt 1
+  #  - ΔCt 2
+  #  - ΔΔCt 1
+  #  - ΔΔCt 2
 #  - Fold 1
-#  - Fold 2
+  #  - Fold 2
   - Ave Fold
   - sd
-class_mapping:  # You can comment a class to disable it
+class_mapping: # You can comment a class to disable it
   0: 0
   1: 1
   2: 2
   3: 3
-  4: 4
+  #  4: 4
   5: 5
-num_split_fold: 5  # num-fold strategy to split train and eval dataset
+num_split_fold: 3  # num-fold strategy to split train and eval dataset
+num_repeat_split_fold: 30  # for RepeatedKFold
 split_random_seed: 0.1
 # if None, only use the samples that has all markers. or set the default value.
 default_missing_value: null
 
 model: rdf
 model_kwargs:
-  n_estimators: [10, 100]
-  criterion: [gini, entropy]
-  max_depth: [ 5, 10, 50 ]
-  min_samples_split: [2, 0.1]
-  min_samples_leaf: [1, 0.1]
-  class_weight: [balanced, balanced_subsample]
+  n_estimators: 100
+  criterion: gini
+  class_weight: balanced
+#model_kwargs_search:
+#  n_estimators: [10, 100]
+#  criterion: [gini, entropy]
+#  max_depth: [ 5, 10, 50 ]
+#  min_samples_split: [2, 0.1]
+#  min_samples_leaf: [1, 0.1]
+#  class_weight: [balanced, balanced_subsample]

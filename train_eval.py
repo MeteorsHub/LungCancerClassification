@@ -1,7 +1,6 @@
 import argparse
 import glob
 import os
-import pickle
 
 import matplotlib.pyplot as plt
 from sklearn import metrics, base
@@ -79,7 +78,7 @@ def train_eval(config, exp_path):
     all_marker_test_metrics = []
     for i, marker in enumerate(dataset.markers):
         model = get_model(config)
-        if config.get('parameter_search', True):
+        if 'model_kwargs_search' in config:
             # parameter search
             print('parameter search for marker %s...' % marker)
             all_x, all_y, cv_index = dataset.get_all_data(marker)
@@ -102,8 +101,7 @@ def train_eval(config, exp_path):
         test_ys = []
         test_ys_score = []
         for fold_i, (train_x, train_y, test_x, test_y) in enumerate(dataset.get_split_data(marker)):
-            if config.get('parameter_search', True):
-                model = base.clone(model)
+            model = base.clone(model)
             model.set_params(**best_params[marker])
             model.fit(train_x, train_y)
             # model.classes_ = dataset.classes
@@ -115,11 +113,11 @@ def train_eval(config, exp_path):
             train_ys_score += train_y_score
             test_y_score = model.predict_proba(test_x).tolist()
             test_ys_score += test_y_score
-            model_filename = os.path.join(exp_path, 'model', '%s_%s_fold_%d.pkl'
-                                          % (config['model'], marker, fold_i))
-            maybe_create_path(os.path.dirname(model_filename))
-            with open(model_filename, 'wb') as f:
-                pickle.dump(model, f)
+            # model_filename = os.path.join(exp_path, 'model', '%s_%s_fold_%d.pkl'
+            #                               % (config['model'], marker, fold_i))
+            # maybe_create_path(os.path.dirname(model_filename))
+            # with open(model_filename, 'wb') as f:
+            #     pickle.dump(model, f)
 
         train_metrics = eval_results(train_ys, train_ys_score,
                                      labels=dataset.classes, average='macro',
@@ -148,7 +146,6 @@ def train_eval(config, exp_path):
             double_print(log_str, metrics_file)
         for metrics_name in metrics_avg_names:
             double_print('%s: %1.1f' % (metrics_name, test_metrics[metrics_name]), metrics_file)
-        double_print('metrics on test set:', metrics_file)
 
         # generate figure
         current_ax = ax[0, i]
@@ -168,6 +165,7 @@ def train_eval(config, exp_path):
         plot_feature_distribution(dup_reduced_train_xs, ax=current_ax, t_sne=True,
                                   hue=dup_reduced_train_ys_str, hue_order=classes_str,
                                   style=dup_reduced_train_ys_str, style_order=classes_str,
+                                  # x_lim='box', y_lim='box',
                                   x_lim='min_max_extend', y_lim='min_max_extend',
                                   contour=contour_flag, z_generator=best_model.predict)
         current_ax.set_title('%s trained on whole set' % marker)
@@ -206,6 +204,7 @@ def train_eval(config, exp_path):
         plot_feature_distribution(test_x, ax=current_ax, t_sne=True,
                                   hue=test_y_str, hue_order=classes_str,
                                   style=test_y_str, style_order=classes_str,
+                                  # x_lim='box', y_lim='box',
                                   x_lim='min_max_extend', y_lim='min_max_extend',
                                   contour=contour_flag, z_generator=model.predict)
         current_ax.set_title('%s on test set of the last fold' % marker)
@@ -238,11 +237,11 @@ def train_eval(config, exp_path):
 
     for metrics_name in metrics_avg_names:
         all_marker_values = [item[metrics_name] for item in all_marker_train_metrics]
-        double_print('marker train %s: %1.1f' % (metrics_name, sum(all_marker_values) / len(all_marker_values)),
+        double_print('overall train %s: %1.1f' % (metrics_name, sum(all_marker_values) / len(all_marker_values)),
                      metrics_file)
     for metrics_name in metrics_avg_names:
         all_marker_values = [item[metrics_name] for item in all_marker_test_metrics]
-        double_print('marker test %s: %1.1f' % (metrics_name, sum(all_marker_values) / len(all_marker_values)),
+        double_print('overall test %s: %1.1f' % (metrics_name, sum(all_marker_values) / len(all_marker_values)),
                      metrics_file)
     metrics_file.close()
     save_yaml(os.path.join(exp_path, 'best_params.yaml'), best_params)

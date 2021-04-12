@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="rdf/joint_prime_feature_multiclass" type="PythonConfigurationType" factoryName="Python" folderName="rdf">
+  <configuration default="false" name="rdf/joint_prime_feature_multiclass" type="PythonConfigurationType" factoryName="Python" folderName="rdf" singleton="false">
     <module name="LungCancerClassification" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
@@ -13,7 +13,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/train_eval.py" />
-    <option name="PARAMETERS" value="-c=rdf/joint_prime_feature_multiclass -s=n1 -r" />
+    <option name="PARAMETERS" value="-c=rdf/joint_prime_feature_multiclass -s=d3 -r -o" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

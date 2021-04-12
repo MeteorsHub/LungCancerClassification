@@ -25,6 +25,7 @@ class MarkerExpressionDataset:
         self.data_root = config['data_root']
         self.marker_mapping = config['marker_mapping']
         self.features = config['features']
+        self.feature_norm = config.get('feature_norm', None)
         self.data_clean = config.get('data_clean', None)
         self.feature_selection = config.get('feature_selection', None)
         self.feature_selector = None
@@ -168,7 +169,14 @@ class MarkerExpressionDataset:
                     if item['name'] != src_data[item_id]['name']:
                         raise ValueError('name %s for %s in %s is different with others'
                                          % (item['name'], item_id, src_marker))
-                src_data[item_id]['feature'][src_marker] = [float(item[feat]) for feat in self.features]
+                feature = [float(item[feat]) for feat in self.features]
+                if self.feature_norm is not None:
+                    if self.feature_norm['method'] == 'log':
+                        epsilon = self.feature_norm.get('epsilon', 1e-8)
+                        feature = [np.log(feat + epsilon) for feat in feature]
+                    else:
+                        raise AttributeError('unrecognized feature norm method: %s' % self.feature_norm['method'])
+                src_data[item_id]['feature'][src_marker] = feature
 
         # marker mapping with missing values
         for dst_marker in self.markers:
@@ -194,24 +202,28 @@ class MarkerExpressionDataset:
             for marker in self.markers:
                 self.outlier_samples[marker] = dict()
                 for class_i in self.classes:
-                    if self.data_clean == 'isolation_forest':
-                        clf = IsolationForest(n_estimators=50, random_state=int(self.random_seed * 100))
-                    elif self.data_clean == 'local_outlier_factor':
-                        clf = LocalOutlierFactor(n_neighbors=5)
-                    elif self.data_clean == 'robust_covariance':
-                        clf = EllipticEnvelope(random_state=int(self.random_seed * 100))
-                    elif self.data_clean == 'one_class_svm':
-                        clf = OneClassSVM(kernel='linear')
+                    if isinstance(self.data_clean, list):
+                        outlier_ids = self.data_clean
                     else:
-                        raise AttributeError('unrecognized data clean method: %s' % self.data_clean['method'])
+                        if self.data_clean == 'isolation_forest':
+                            clf = IsolationForest(n_estimators=50, random_state=int(self.random_seed * 100))
+                        elif self.data_clean == 'local_outlier_factor':
+                            clf = LocalOutlierFactor(n_neighbors=5)
+                        elif self.data_clean == 'robust_covariance':
+                            clf = EllipticEnvelope(random_state=int(self.random_seed * 100))
+                        elif self.data_clean == 'one_class_svm':
+                            clf = OneClassSVM(kernel='linear')
+                        else:
+                            raise AttributeError('unrecognized data clean method: %s' % self.data_clean)
 
-                    sample_ids = [s_id for s_id in list(self.sample_data[marker].keys())
-                                  if self.sample_data[marker][s_id]['class'] == class_i]
-                    sample_features = [self.sample_data[marker][s_id]['feature'] for s_id in sample_ids]
-                    sample_labels = clf.fit_predict(sample_features)
-                    outlier_ids = [sample_ids[i] for i in range(len(sample_ids)) if sample_labels[i] < 0]
+                        sample_ids = [s_id for s_id in list(self.sample_data[marker].keys())
+                                      if self.sample_data[marker][s_id]['class'] == class_i]
+                        sample_features = [self.sample_data[marker][s_id]['feature'] for s_id in sample_ids]
+                        sample_labels = clf.fit_predict(sample_features)
+                        outlier_ids = [sample_ids[i] for i in range(len(sample_ids)) if sample_labels[i] < 0]
                     for outlier_id in outlier_ids:
-                        self.outlier_samples[marker][outlier_id] = self.sample_data[marker].pop(outlier_id)
+                        if outlier_id in self.sample_data[marker]:
+                            self.outlier_samples[marker][outlier_id] = self.sample_data[marker].pop(outlier_id)
 
         # split fold
         for marker in self.markers:
