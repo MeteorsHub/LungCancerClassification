@@ -31,17 +31,20 @@ data_clean:
   #  'local_outlier_factor'
   - "0014"
   - "0023"
+  - "0007"
   - "1009"
   - "2033"
   - "2017"
   - "3001"
+  - "4001"
   - "5003"
+  - "5005"
   - "5022"
 feature_norm:
   method: log
 class_mapping: # You can comment a class to disable it
-  0: 0
-  1: 1
+  0: 1
+  1: 0
   2: 0
   3: 0
   #  4: 0
@@ -49,7 +52,7 @@ class_mapping: # You can comment a class to disable it
   #feature_selection:
   #  method: RFE
   #  kwargs_search:
-  #    n_features_to_select: [11]
+  #    n_features_to_select: [10]
   #  #    n_features_to_select: [ 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25 ]
   #  #    n_features_to_select: [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 ]
 #  method: custom
@@ -71,14 +74,14 @@ class_mapping: # You can comment a class to disable it
 feature_transformation:
   method: lmnn
   kwargs_search:
-    n_components: [ null ]
+    n_components: [ 5 ]
     init: [ pca ]
     #    init: [ pca, identity ]
-    k: [ 4 ]
+    k: [ 3, 5 ]
 #    k: [ 1, 3, 5 ]
 
 num_split_fold: 3  # num-fold strategy to split train and eval dataset
-num_repeat_split_fold: 30  # for RepeatedKFold
+num_repeat_split_fold: 10  # for RepeatedKFold
 split_random_seed: 0.2
 # if None, only use the samples that has all markers. or set the default value.
 default_missing_value: null

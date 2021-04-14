@@ -53,43 +53,38 @@ python train_eval.py \
 
 ### v4
 
-由于特征变换阶段使用所有数据进行分析，而lda算法是监督算法，用作特征变换初始模型"不合常规"。所以还是改用pca算法 继续多个二分类器设计，每个二分类器都使用了特征选择
+数据由PCR变成LAMP，重新做实验，删除了一些不好的样本，使用的样本数量为75+20 其中9个恶性样本只使用在良恶性二分类问题上。特征选择效果不明显，不使用特征选择。
 
-0. 正常（90.3, 84.0）
+0. 正常（99.3, 94.9）
     ```shell
     python train_eval.py \
     -c archive/v_4/biclass_0 \
-    -s fs_ft_svm
+    -s ft_svm
     ```
-   特征选择步骤使用的特征为：
-1. 腺癌（）
+1. 腺癌（99.3, 91.3）
     ```shell
     python train_eval.py \
     -c archive/v_4/biclass_1 \
-    -s fs_ft_svm
+    -s ft_svm
     ```
-   特征选择步骤使用的特征为：CEA、CA125、CGA的fold，NSE、TTF1的sd，其余特征的fold+sd
-2. 鳞癌（86.9，83.8）
+2. 鳞癌（95.0，86.1）
     ```shell
     python train_eval.py \
-    -c archive/v_1/biclass_2 \
-    -s fs_ft_svm
+    -c archive/v_4/biclass_2 \
+    -s ft_svm
     ```
-   特征选择步骤使用的特征为：CEA、CYFRA21、IDH1、CGA、TTF1、CD56的fold，CA125的sd
-3. 小细胞癌（99.7，98.9）
+3. 小细胞癌（99.9, 98.8）
     ```shell
     python train_eval.py \
-    -c archive/v_1/biclass_3 \
-    -s fs_ft_svm
+    -c archive/v_4/biclass_3 \
+    -s ft_svm
     ```
-   特征选择步骤使用的特征为：CEA、SCCA、NSE的fold，其余特征的fold+sd
-4. 转移癌（97.4，93.2）
+4. 转移癌（99.5，89.4）
     ```shell
     python train_eval.py \
-    -c archive/v_1/biclass_5 \
-    -s fs_ft_svm
+    -c archive/v_4/biclass_5 \
+    -s ft_svm
     ```
-   特征选择步骤使用的特征为：CYFRA21的fold，其余特征的fold+sd
 
 ### v3
 

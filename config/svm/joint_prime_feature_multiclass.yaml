@@ -32,11 +32,14 @@ data_clean:
   #  'local_outlier_factor'
   - "0014"
   - "0023"
+  - "0007"
   - "1009"
   - "2033"
   - "2017"
   - "3001"
+  - "4001"
   - "5003"
+  - "5005"
   - "5022"
 feature_norm:
   method: log
