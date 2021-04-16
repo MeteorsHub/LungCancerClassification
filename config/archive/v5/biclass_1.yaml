@@ -1,0 +1,91 @@
+data_root: ./data/version_3
+marker_mapping:
+  CEA: ALL
+  CYFRA21: ALL
+  SCCA: ALL
+  NSE: ALL
+  ProGRP: ALL
+  CA125: ALL
+  EGFR: ALL
+  IDH1: ALL
+  TTF1: ALL
+  SYN: ALL
+  CD56: ALL
+features:
+  - Ave Fold
+  - sd
+data_clean:
+  - '0014'
+  - '0023'
+  - '0007'
+  - '1009'
+  - '2033'
+  - '2017'
+  - '3001'
+  - '4001'
+  - '5003'
+  - '5005'
+  - '5022'
+feature_norm:
+  method: log
+class_mapping:
+  0: 0
+  1: 1
+  2: 0
+  3: 0
+  5: 0
+feature_selection:
+  method: custom
+  selection:
+    ALL:
+      - true
+      - true
+      - true
+      - true
+      - true
+      - true
+      - true
+      - true
+      - true
+      - true
+      - true
+      - true
+      - false
+      - false
+      - true
+      - true
+      - true
+      - true
+      - true
+      - true
+      - true
+      - true
+feature_transformation:
+  method: lmnn
+  kwargs_search:
+    n_components:
+      - 5
+    init:
+      - pca
+    k:
+      - 3
+      - 5
+num_split_fold: 3
+num_repeat_split_fold: 10
+split_random_seed: 0.2
+default_missing_value: null
+num_samples_in_each_bag: 1
+model: svm
+model_kwargs:
+  probability: true
+  random_state: 1
+  class_weight: balanced
+model_kwargs_search:
+  kernel:
+    - linear
+    - rbf
+  C:
+    - 5.0e-05
+    - 0.01
+    - 1
+    - 10

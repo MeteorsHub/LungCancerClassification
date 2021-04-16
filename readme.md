@@ -51,6 +51,46 @@ python train_eval.py \
 
 ## 最佳实验设置
 
+### v5
+
+由v4相比，重新添加了特征选择模块，不过大部分分类都只删除了一个标志物特征
+
+0. 正常（100, 98.0）
+    ```shell
+    python train_eval.py \
+    -c archive/v_5/biclass_0 \
+    -s ft_svm
+    ```
+   特征选择模块删除了SCCA、CA125特征
+1. 腺癌（99.9, 92.8）
+    ```shell
+    python train_eval.py \
+    -c archive/v_5/biclass_1 \
+    -s ft_svm
+    ```
+   特征选择模块删除了EFGR特征
+2. 鳞癌（96.0，88.7）
+    ```shell
+    python train_eval.py \
+    -c archive/v_5/biclass_2 \
+    -s ft_svm
+    ```
+   特征选择模块删除了SCCA特征
+3. 小细胞癌（99.9, 99.3）
+    ```shell
+    python train_eval.py \
+    -c archive/v_5/biclass_3 \
+    -s ft_svm
+    ```
+   特征选择模块删除了CYFRA21-1、CA125、IDH1、SYN特征
+4. 转移癌（99.7，90.1）
+    ```shell
+    python train_eval.py \
+    -c archive/v_5/biclass_5 \
+    -s ft_svm
+    ```
+   特征选择模块删除了NSE特征
+
 ### v4
 
 数据由PCR变成LAMP，重新做实验，删除了一些不好的样本，使用的样本数量为75+20 其中9个恶性样本只使用在良恶性二分类问题上。特征选择效果不明显，不使用特征选择。

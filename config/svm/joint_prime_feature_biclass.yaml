@@ -27,6 +27,19 @@ features:
   #  - Fold 2
   - Ave Fold
   - sd
+#feature_mean:
+#  [ -2.8863, -3.7717,
+#    1.3902, -1.4745,
+#    -4.9890, -5.88771,
+#    -1.3605, -2.9930,
+#    -2.6304, -3.6785,
+#    -2.1682, -3.5525,
+#    -3.6714, -4.9900,
+#    -0.7517, -2.6673,
+#    0.0159, -0.9890,
+#    -5.1045, -6.0825,
+#    -7.9876, -8.4709
+#  ]
 data_clean:
   #  'local_outlier_factor'
   - "0014"
@@ -43,34 +56,33 @@ data_clean:
 feature_norm:
   method: log
 class_mapping: # You can comment a class to disable it
-  0: 1
+  0: 0
   1: 0
   2: 0
   3: 0
   #  4: 0
-  5: 0
-  #feature_selection:
+  5: 1
+feature_selection:
   #  method: RFE
   #  kwargs_search:
-  #    n_features_to_select: [10]
+  #    n_features_to_select: [14]
   #  #    n_features_to_select: [ 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25 ]
-  #  #    n_features_to_select: [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 ]
-#  method: custom
-#  selection:
-#    ALL:
-#      [ true, true,
-#        true, true,
-#        true, true,
-#        true, true,
-#        true, true,
-#        true, true,
-#        true, true,
-#        true, true,
-#        true, true,
-#        false, false,
-#        true, true,
-#        true, true,
-#        true, true, ]
+  method: custom
+  selection:
+    ALL:
+      [
+          true, true,
+          true, true,
+          true, true,
+          false, false,
+          true, true,
+          true, true,
+          true, true,
+          true, true,
+          true, true,
+          true, true,
+          true, true,
+      ]
 feature_transformation:
   method: lmnn
   kwargs_search:

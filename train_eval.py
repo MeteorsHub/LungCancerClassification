@@ -3,7 +3,6 @@ import glob
 import os
 
 import matplotlib.pyplot as plt
-import numpy as np
 from sklearn import metrics, base
 from sklearn.model_selection import GridSearchCV
 
@@ -66,9 +65,15 @@ def train_eval(config, exp_path):
                 if dataset.feature_transformation is not None:
                     components = dataset.feature_transformer[marker].components_
                     f.write('---feature transformation components---:\n%s' % components.tolist())
-                    coefficients = np.abs(components.sum(axis=0)).reshape([len(dataset.features), -1]).sum(axis=0)
-                    coefficients = coefficients / coefficients.sum()
-                    f.write('---feature transformation coefficients---:\n%s' % coefficients.tolist())
+                    # if 'feature_mean' in config:
+                    #     feature_mean = config['feature_mean']
+                    #     coefficients = np.abs(feature_mean*components.sum(axis=0)).\
+                    #         reshape([len(dataset.features), -1]).sum(axis=0)
+                    # else:
+                    #     coefficients = np.abs(components.sum(axis=0)).reshape([len(dataset.features), -1]).sum(axis=0)
+                    # coefficients = coefficients / coefficients.sum()
+                    #
+                    # f.write('---feature transformation coefficients---:\n%s' % coefficients.tolist())
 
     threshold = config.get('threshold', 'roc_optimal')
     metrics_names = ['sensitivity', 'specificity', 'roc_auc_score']
